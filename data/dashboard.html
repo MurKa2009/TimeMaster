@@ -168,52 +168,6 @@
                             <small style="color: rgb(220, 53, 69)">(Применяется после перезагрузки)</small>
                         </div>
                     </div>
-                    <!-- Светодиоды -->
-                    <div class="settings-group">
-                        <h5>Светодиоды</h5>
-                        <div class="row mb-3" style="--bs-gutter-x: 0.5rem; --bs-gutter-y: 0.5rem">
-                            <div class="col-sm-12 col-md-6 col-lg-3">
-                                <label for="led1-color" class="form-label">Cветодиод 1</label>
-                                <select id="led1-color" class="form-select" name="led1Color" required>
-                                    <option value="" selected>без цвета</option>
-                                    <option value="red">Красный</option>
-                                    <option value="yellow">Жёлтый</option>
-                                    <option value="green">Зелёный</option>
-                                    <option value="blue">Синий</option>
-                                </select>
-                            </div>
-                            <div class="col-sm-12 col-md-6 col-lg-3">
-                                <label for="led2-color" class="form-label">Cветодиод 2</label>
-                                <select id="led2-color" class="form-select" name="led2Color" required>
-                                    <option value="" selected>без цвета</option>
-                                    <option value="red">Красный</option>
-                                    <option value="yellow">Жёлтый</option>
-                                    <option value="green">Зелёный</option>
-                                    <option value="blue">Синий</option>
-                                </select>
-                            </div>
-                            <div class="col-sm-12 col-md-6 col-lg-3">
-                                <label for="led3-color" class="form-label">Cветодиод 3</label>
-                                <select id="led3-color" class="form-select" name="led3Color" required>
-                                    <option value="" selected>без цвета</option>
-                                    <option value="red">Красный</option>
-                                    <option value="yellow">Жёлтый</option>
-                                    <option value="green">Зелёный</option>
-                                    <option value="blue">Синий</option>
-                                </select>
-                            </div>
-                            <div class="col-sm-12 col-md-6 col-lg-3">
-                                <label for="led4-color" class="form-label">Cветодиод 4</label>
-                                <select id="led4-color" class="form-select" name="led4Color" required>
-                                    <option value="" selected>без цвета</option>
-                                    <option value="red">Красный</option>
-                                    <option value="yellow">Жёлтый</option>
-                                    <option value="green">Зелёный</option>
-                                    <option value="blue">Синий</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
                     <!-- Синхронизация времени -->
                     <div class="settings-group">
                         <h5>Синхронизация времени</h5>
@@ -305,6 +259,16 @@
                 gray: { full: "rgb(108,117,125)" },
             };
 
+            const dayMap = {
+                monday: "Понедельник",
+                tuesday: "Вторник",
+                wednesday: "Среда",
+                thursday: "Четверг",
+                friday: "Пятница",
+                saturday: "Суббота",
+                sunday: "Воскресенье",
+            };
+
             function updatePillColors() {
                 document.querySelectorAll("#dashboardTabs .nav-link").forEach((pill) => {
                     if (pill.id === "pill-settings" || pill.id === "add-profile-tab") return;
@@ -372,10 +336,6 @@
                         document.getElementById("wifi-password").value = settings.wifiPassword || "";
                         document.getElementById("local-domain").value = settings.localDomain || "";
                         document.getElementById("ntp-server").value = settings.ntpServer || "";
-                        document.getElementById("led1-color").value = settings.led1Color || "";
-                        document.getElementById("led2-color").value = settings.led2Color || "";
-                        document.getElementById("led3-color").value = settings.led3Color || "";
-                        document.getElementById("led4-color").value = settings.led4Color || "";
                         document.getElementById("debug-enabled").checked = settings.debugEnabled;
                         document.getElementById("mode").dispatchEvent(new Event("change"));
                     }
@@ -389,8 +349,8 @@
                         profiles.forEach((profile) => {
                             if (profile && profile.id) {
                                 const color = profile.color || "";
-                                const led = profile.led || 1;
-                                createProfileTab(profile.id, profile.name, color, led, profile);
+                                const day = profile.day || "";
+                                createProfileTab(profile.id, profile.name, color, day, profile);
                             }
                         });
                     }
@@ -416,11 +376,11 @@
                 }
             });
 
-            function createProfileTab(profileId, profileName, profileColor = "", profileLed = 1, profileData = {}) {
+            function createProfileTab(profileId, profileName, profileColor = "", profileDay = "", profileData = {}) {
                 if (document.getElementById(profileId)) return;
                 const newProfileTab = `
           <li class="nav-item">
-            <a class="nav-link profile-pill" data-bs-toggle="pill" href="#${profileId}" data-led="${profileLed}" data-color="${profileColor}" data-status="${
+            <a class="nav-link profile-pill" data-bs-toggle="pill" href="#${profileId}" data-color="${profileColor}" data-status="${
                     profileData.status || "inactive"
                 }">
               ${profileName}
@@ -494,6 +454,20 @@
                 <option value="blue" ${profileColor === "blue" ? "selected" : ""}>Синий</option>
               </select>
             </div>
+            <div class="col-md-2 col-sm-4">
+              <label for="${profileId}-day" class="form-label">День недели</label>
+              <select id="${profileId}-day" name="day" class="form-select">
+                <option value="" ${!profileDay ? "selected" : ""}>--</option>
+                <option value="monday" ${profileDay === "monday" ? "selected" : ""}>Понедельник</option>
+                <option value="tuesday" ${profileDay === "tuesday" ? "selected" : ""}>Вторник</option>
+                <option value="wednesday" ${profileDay === "wednesday" ? "selected" : ""}>Среда</option>
+                <option value="thursday" ${profileDay === "thursday" ? "selected" : ""}>Четверг</option>
+                <option value="friday" ${profileDay === "friday" ? "selected" : ""}>Пятница</option>
+                <option value="saturday" ${profileDay === "saturday" ? "selected" : ""}>Суббота</option>
+                <option value="sunday" ${profileDay === "sunday" ? "selected" : ""}>Воскресенье</option>
+		<option value="none" ${profileDay === "none" ? "selected" : ""}>любой день</option>
+              </select>
+            </div>
           </div>
         `;
                 const newProfileContent = `
@@ -545,6 +519,13 @@
                         updatePillColors();
                     }
                 });
+                document.getElementById(`${profileId}-day`).addEventListener("change", function () {
+                    const selectedDay = this.value;
+                    const pill = document.querySelector(`#dashboardTabs .profile-pill[href="#${profileId}"]`);
+                    if (pill) {
+                        pill.setAttribute("data-day", selectedDay);
+                    }
+                });
             }
 
             function addRow(tableId, addButtonId) {
@@ -589,7 +570,7 @@
                     return;
                 }
                 const profileId = "profile" + Date.now();
-                createProfileTab(profileId, newProfileName, "", 1, {});
+                createProfileTab(profileId, newProfileName, "", "", {});
                 document.getElementById("new-profile-name").value = "";
                 const triggerEl = document.querySelector(`a[href="#${profileId}"]`);
                 const tab = new bootstrap.Tab(triggerEl);
@@ -602,6 +583,7 @@
                 const profileData = { id: profileId };
                 profileData.name = formData.get("name");
                 profileData.color = formData.get("color");
+                profileData.day = formData.get("day");
                 const lessons = {};
                 for (let [key, value] of formData.entries()) {
                     if (key.startsWith("lesson")) {
@@ -641,10 +623,6 @@
                     accountPassword: formData.get("accountPassword") || formData.get("password"),
                     localDomain: formData.get("localDomain"),
                     ntpServer: formData.get("ntpServer"),
-                    led1Color: formData.get("led1Color"),
-                    led2Color: formData.get("led2Color"),
-                    led3Color: formData.get("led3Color"),
-                    led4Color: formData.get("led4Color"),
                     debugEnabled: document.getElementById("debug-enabled").checked,
                 };
                 try {
@@ -719,23 +697,6 @@
                     console.error("Ошибка установки времени:", err);
                     showToast("Ошибка установки времени", "danger");
                 }
-            });
-
-            document.addEventListener("DOMContentLoaded", function () {
-                document.querySelectorAll('.form-select[name^="led"]').forEach((select) => {
-                    const updateColor = () => {
-                        const selectedColor = select.value;
-                        if (colorMap[selectedColor]) {
-                            select.style.backgroundColor = colorMap[selectedColor].full;
-                            select.style.color = selectedColor === "yellow" ? "black" : "white";
-                        } else {
-                            select.style.backgroundColor = "white";
-                            select.style.color = "black";
-                        }
-                    };
-                    select.addEventListener("change", updateColor);
-                    updateColor();
-                });
             });
 
             window.onload = loadData;

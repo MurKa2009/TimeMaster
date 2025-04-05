@@ -2,42 +2,43 @@
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 
-#define SETTINGS_FILE "/settings.json" // File where settings are stored
+#define SETTINGS_FILE "/settings.json" // Файл, где хранятся настройки
 
-// Structure to hold device settings
+// Структура для хранения настроек устройства
 struct DeviceSettings {
-  String apSSID;          // Access Point SSID
-  String apPassword;      // Access Point password
-  String wifiSSID;        // WiFi SSID for client mode
-  String wifiPassword;    // WiFi password for client mode
-  bool useAPMode;         // Whether to use Access Point mode
-  bool debugEnabled;      // Whether debug mode is enabled
-  String accountLogin;    // Login for web interface
-  String accountPassword; // Password for web interface
-  String localDomain;     // mDNS domain name
-  String ntpServer;       // NTP server for time synchronization
-  String led1Color;       // Color for LED 1
-  String led2Color;       // Color for LED 2
-  String led3Color;       // Color for LED 3
-  String led4Color;       // Color for LED 4
+  String apSSID;          // SSID точки доступа
+  String apPassword;      // Пароль точки доступа
+  String wifiSSID;        // SSID WiFi для режима клиента
+  String wifiPassword;    // Пароль WiFi для режима клиента
+  bool useAPMode;         // Использовать ли режим точки доступа
+  bool debugEnabled;      // Включен ли режим отладки
+  String accountLogin;    // Логин для веб-интерфейса
+  String accountPassword; // Пароль для веб-интерфейса
+  String localDomain;     // mDNS доменное имя
+  String ntpServer;       // NTP сервер для синхронизации времени
+  String led1Color;       // Цвет для LED 1
+  String led2Color;       // Цвет для LED 2
+  String led3Color;       // Цвет для LED 3
+  String led4Color;       // Цвет для LED 4
+  String selectedColor;   // Выбранный цвет (новая переменная)
 };
 
-// Default settings if no settings file exists
+// Настройки по умолчанию, если файл настроек не существует
 DeviceSettings deviceSettings = {
-  "SchoolBellAP", "12345678", "", "", true, true, "admin", "admin", "esp", "time.nist.gov", "", "", "", ""
+  "SchoolBellAP", "12345678", "", "", true, true, "admin", "admin", "esp", "time.nist.gov", "", "", "", "", ""
 };
 
-// Load settings from LittleFS
+// Загрузка настроек из LittleFS
 bool loadSettings() {
-  if (!LittleFS.exists(SETTINGS_FILE)) return false; // Check if settings file exists
-  File file = LittleFS.open(SETTINGS_FILE, "r"); // Open file for reading
-  if (!file) return false; // Return false if file cannot be opened
+  if (!LittleFS.exists(SETTINGS_FILE)) return false; // Проверка существования файла настроек
+  File file = LittleFS.open(SETTINGS_FILE, "r"); // Открытие файла для чтения
+  if (!file) return false; // Возврат false, если файл не может быть открыт
   JsonDocument doc;
-  DeserializationError error = deserializeJson(doc, file); // Parse JSON from file
+  DeserializationError error = deserializeJson(doc, file); // Парсинг JSON из файла
   file.close();
-  if (error) return false; // Return false if parsing fails
-  
-  // Load settings from JSON, using defaults if values are missing
+  if (error) return false; // Возврат false, если парсинг не удался
+
+  // Загрузка настроек из JSON, использование значений по умолчанию, если значения отсутствуют
   deviceSettings.apSSID          = doc["apSSID"]          | "SchoolBellAP";
   deviceSettings.apPassword      = doc["apPassword"]      | "12345678";
   deviceSettings.wifiSSID        = doc["wifiSSID"]        | "";
@@ -52,15 +53,16 @@ bool loadSettings() {
   deviceSettings.led2Color       = doc["led2Color"]       | "";
   deviceSettings.led3Color       = doc["led3Color"]       | "";
   deviceSettings.led4Color       = doc["led4Color"]       | "";
+  deviceSettings.selectedColor   = doc["selectedColor"]   | ""; // Загрузка выбранного цвета
   return true;
 }
 
-// Save settings to LittleFS
+// Сохранение настроек в LittleFS
 bool saveSettings() {
-  File file = LittleFS.open(SETTINGS_FILE, "w"); // Open file for writing
-  if (!file) return false; // Return false if file cannot be opened
+  File file = LittleFS.open(SETTINGS_FILE, "w"); // Открытие файла для записи
+  if (!file) return false; // Возврат false, если файл не может быть открыт
   JsonDocument doc;
-  // Store settings in JSON
+  // Сохранение настроек в JSON
   doc["apSSID"]          = deviceSettings.apSSID;
   doc["apPassword"]      = deviceSettings.apPassword;
   doc["wifiSSID"]        = deviceSettings.wifiSSID;
@@ -75,7 +77,8 @@ bool saveSettings() {
   doc["led2Color"]       = deviceSettings.led2Color;
   doc["led3Color"]       = deviceSettings.led3Color;
   doc["led4Color"]       = deviceSettings.led4Color;
-  bool ok = (serializeJson(doc, file) > 0); // Write JSON to file
+  doc["selectedColor"]   = deviceSettings.selectedColor; // Сохранение выбранного цвета
+  bool ok = (serializeJson(doc, file) > 0); // Запись JSON в файл
   file.close();
-  return ok; // Return true if successful
+  return ok; // Возврат true, если успешно
 }
