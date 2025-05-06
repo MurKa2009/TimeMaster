@@ -19,7 +19,6 @@ void printDebugHeader() {
   Serial.println();
 }
 
-// Print a message to Serial if debug mode is enabled
 inline void DebugPrintln(const String &message) {
   if (deviceSettings.debugEnabled) {
     Serial.println(message);

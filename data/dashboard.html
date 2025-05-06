@@ -1,705 +1,657 @@
 <!DOCTYPE html>
 <html lang="ru">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Панель управления</title>
-        <link href="/styles.min.css" rel="stylesheet" />
-        <script src="/scripts.js"></script>
-        <style>
-            body {
-                padding: 20px;
-            }
-            #pill-settings,
-            #add-profile-tab {
-                background-color: transparent;
-                color: #495057;
-            }
-            #pill-settings.active,
-            #add-profile-tab.active {
-                background-color: var(--bs-secondary);
-                color: #fff;
-            }
-            .nav-pills .nav-link.profile-pill {
-                transition: background-color 0.3s, color 0.3s;
-            }
-            .tab-content {
-                padding: 20px;
-                border: 1px solid #ddd;
-                border-radius: 8px;
-            }
-            .table {
-                margin-bottom: 0;
-                table-layout: fixed;
-                max-width: 100%;
-            }
-            .bdr {
-                border: 1px solid #d9dee2;
-                border-radius: 7px;
-                overflow: hidden;
-            }
-            tr td {
-                padding: 0 !important;
-                margin: 0 !important;
-            }
-            .bord {
-                text-align: center;
-                border-right: 1px solid #d9dee2;
-            }
-            .hb {
-                border-bottom: 1px solid #d9dee2;
-            }
-            .border-none tr:first-child td {
-                border-top: none;
-            }
-            .border-none tr:last-child td {
-                border-bottom: none;
-            }
-            .border-none tr td:first-child {
-                border-left: none;
-            }
-            .border-none tr td:last-child {
-                border-right: none;
-            }
-            .form-control-table {
-                border: 0 !important;
-                border-radius: 0 !important;
-            }
-            .form-control-table:focus {
-                outline: none !important;
-                box-shadow: none !important;
-                border-color: transparent !important;
-            }
-            .border-none td {
-                border: 1px solid #d9dee2;
-            }
-            .form-btn {
-                border: 0;
-                border-radius: 0;
-            }
-            .profile-header {
-                display: flex;
-                align-items: center;
-            }
-            .profile-header .col-name {
-                flex: 0 0 83%;
-            }
-            .profile-header .col-color {
-                flex: 0 0 17%;
-            }
-            .settings-group {
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                padding: 10px 15px 0 15px;
-                margin-bottom: 10px;
-            }
-            .settings-group h5 {
-                margin-bottom: 10px;
-            }
-            #settings-form > button {
-                margin-top: 10px;
-            }
-            #toast-container {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                z-index: 1055;
-            }
-        </style>
-    </head>
-    <body>
-        <div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3"></div>
-        <ul class="nav nav-pills" id="dashboardTabs">
-            <li class="nav-item">
-                <a class="nav-link active" data-bs-toggle="pill" href="#settings" id="pill-settings">Настройки</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" id="add-profile-tab" data-bs-toggle="pill" href="#add-profile">+ Добавить профиль</a>
-            </li>
-        </ul>
-        <div class="tab-content mt-3">
-            <!-- Блок настроек -->
-            <div class="tab-pane fade show active" id="settings">
-                <h2>Настройки</h2>
-                <form id="settings-form">
-                    <!-- Учётная запись -->
-                    <div class="settings-group">
-                        <h5>Учётная запись</h5>
-                        <div class="mb-3">
-                            <label for="login" class="form-label">Логин (Аккаунт)</label>
-                            <input type="text" class="form-control" id="login" name="accountLogin" required />
-                        </div>
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Пароль (Аккаунт)</label>
-                            <input type="password" class="form-control" id="password" name="accountPassword" required />
-                        </div>
-                    </div>
-                    <!-- Режим подключения -->
-                    <div class="settings-group">
-                        <h5>Режим подключения</h5>
-                        <div class="mb-3">
-                            <label for="mode" class="form-label">Выбор режима</label>
-                            <select class="form-select" id="mode" name="mode" required>
-                                <option value="ap">Точка доступа (AP)</option>
-                                <option value="wifi">WiFi-клиент</option>
-                            </select>
-                        </div>
-                        <div id="ap-fields" style="display: none">
-                            <div class="mb-3">
-                                <label for="ap-ssid" class="form-label">Имя сети (AP)</label>
-                                <input type="text" class="form-control" id="ap-ssid" name="ap-ssid" />
-                            </div>
-                            <div class="mb-3">
-                                <label for="ap-password" class="form-label">Пароль сети (AP)</label>
-                                <input type="password" class="form-control" id="ap-password" name="ap-password" />
-                            </div>
-                        </div>
-                        <div id="wifi-fields" style="display: none">
-                            <div class="mb-3">
-                                <label for="wifi-ssid" class="form-label">Имя WiFi сети</label>
-                                <input type="text" class="form-control" id="wifi-ssid" name="wifi-ssid" />
-                            </div>
-                            <div class="mb-3">
-                                <label for="wifi-password" class="form-label">Пароль WiFi сети</label>
-                                <input type="password" class="form-control" id="wifi-password" name="wifi-password" />
-                            </div>
-                        </div>
-                        <div style="padding-bottom: 7px">
-                            <small style="color: rgb(220, 53, 69)">(Применяется после перезагрузки)</small>
-                        </div>
-                    </div>
-                    <!-- Синхронизация времени -->
-                    <div class="settings-group">
-                        <h5>Синхронизация времени</h5>
-                        <div class="mb-3">
-                            <!-- Убрана подпись -->
-                            <input type="datetime-local" step="1" class="form-control" id="manual-time" name="manualTime" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="ntp-server" class="form-label">NTP Сервер</label>
-                            <input type="text" class="form-control" id="ntp-server" name="ntpServer" required />
-                        </div>
-                        <div class="row mb-3" style="--bs-gutter-x: 0.5rem; --bs-gutter-y: 0.5rem">
-                            <div class="col-sm-12 col-md-3 col-lg-4">
-                                <button type="button" class="btn btn-success" style="width: 100%" id="save-manual-time">
-                                    Сохранить время
-                                </button>
-                            </div>
-                            <div class="col-sm-12 col-md-4 col-lg-4">
-                                <button type="button" class="btn btn-secondary" style="width: 100%" id="sync-ntp-time">
-                                    Синхронизация с NTP
-                                </button>
-                            </div>
-                            <div class="col-sm-12 col-md-5 col-lg-4">
-                                <button type="button" class="btn btn-secondary" style="width: 100%" id="sync-device-time">
-                                    Синхронизация с устройством
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Debug режим (перемещён в конец) -->
-                    <div class="settings-group">
-                        <h5>Debug режим</h5>
-                        <div class="mb-3">
-                            <label for="local-domain" class="form-label">Локальное доменное имя</label>
-                            <input type="text" class="form-control" id="local-domain" name="localDomain" required />
-                        </div>
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="debug-enabled" name="debugEnabled" />
-                            <label class="form-check-label" for="debug-enabled">Включить debug режим</label>
-                        </div>
-                        <div style="padding-bottom: 7px">
-                            <small style="color: rgb(220, 53, 69)">(Применяется после перезагрузки)</small>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-success">Сохранить настройки</button>
-                </form>
-            </div>
-            <!-- Добавление профиля -->
-            <div class="tab-pane fade" id="add-profile">
-                <h2>Добавить профиль</h2>
-                <form id="add-profile-form">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Панель управления</title>
+    <link href="/styles.min.css" rel="stylesheet" />
+    <script src="/scripts.js"></script>
+    <style>
+        body { padding: 20px; }
+        #pill-settings, #add-profile-tab { background-color: transparent; color: #495057; }
+        #pill-settings.active, #add-profile-tab.active { background-color: var(--bs-secondary); color: #fff; }
+        .nav-pills .nav-link.profile-pill { transition: background-color 0.3s, color 0.3s; }
+        .tab-content { padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .table { margin-bottom: 0; table-layout: fixed; max-width: 100%; }
+        .bdr { border: 1px solid #d9dee2; border-radius: 7px; overflow: hidden; }
+        tr td { padding: 0 !important; margin: 0 !important; }
+        .bord { text-align: center; border-right: 1px solid #d9dee2; }
+        .hb { border-bottom: 1px solid #d9dee2; }
+        .border-none tr:first-child td { border-top: none; }
+        .border-none tr:last-child td { border-bottom: none; }
+        .border-none tr td:first-child { border-left: none; }
+        .border-none tr td:last-child { border-right: none; }
+        .form-control-table { border: 0 !important; border-radius: 0 !important; }
+        .form-control-table:focus { outline: none !important; box-shadow: none !important; border-color: transparent !important; }
+        .border-none td { border: 1px solid #d9dee2; }
+        .form-btn { border: 0; border-radius: 0; }
+        .profile-header { display: flex; align-items: center; }
+        .profile-header .col-name { flex: 0 0 83%; }
+        .profile-header .col-color { flex: 0 0 17%; }
+        .settings-group { border: 1px solid #ccc; border-radius: 5px; padding: 10px 15px 0 15px; margin-bottom: 10px; }
+        .settings-group h5 { margin-bottom: 10px; }
+        #settings-form > button { margin-top: 10px; }
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 1055; }
+    </style>
+</head>
+<body>
+    <div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3"></div>
+    <ul class="nav nav-pills" id="dashboardTabs">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="pill" href="#settings" id="pill-settings">Настройки</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="add-profile-tab" data-bs-toggle="pill" href="#add-profile">+ Добавить профиль</a>
+        </li>
+    </ul>
+    <div class="tab-content mt-3">
+        <!-- Блок настроек -->
+        <div class="tab-pane fade show active" id="settings">
+            <h2>Настройки</h2>
+            <form id="settings-form">
+                <!-- Учётная запись -->
+                <div class="settings-group">
+                    <h5>Учётная запись</h5>
                     <div class="mb-3">
-                        <label for="new-profile-name" class="form-label">Название нового профиля</label>
-                        <input type="text" class="form-control" id="new-profile-name" name="new-profile-name" required />
+                        <label for="login" class="form-label">Логин (Аккаунт)</label>
+                        <input type="text" class="form-control" id="login" name="accountLogin" required />
                     </div>
-                    <button type="submit" class="btn btn-primary">Добавить</button>
-                </form>
-            </div>
-        </div>
-        <script>
-            function showToast(message, type = "info") {
-                const toastId = "toast-" + Date.now();
-                const toastHtml = `
-          <div id="${toastId}" class="toast align-items-center text-bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-              <div class="toast-body">${message}</div>
-              <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-          </div>
-        `;
-                document.getElementById("toast-container").insertAdjacentHTML("beforeend", toastHtml);
-                const toastElement = document.getElementById(toastId);
-                const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
-                toast.show();
-                toastElement.addEventListener("hidden.bs.toast", () => {
-                    toastElement.remove();
-                });
-            }
-
-            function canAddProfile() {
-                return document.querySelectorAll("#dashboardTabs .nav-link.profile-pill").length < 4;
-            }
-
-            const colorMap = {
-                red: { full: "rgb(220,53,69)" },
-                yellow: { full: "rgb(255,193,7)" },
-                green: { full: "rgb(25,135,84)" },
-                blue: { full: "rgb(13,110,253)" },
-                gray: { full: "rgb(108,117,125)" },
-            };
-
-            const dayMap = {
-                monday: "Понедельник",
-                tuesday: "Вторник",
-                wednesday: "Среда",
-                thursday: "Четверг",
-                friday: "Пятница",
-                saturday: "Суббота",
-                sunday: "Воскресенье",
-            };
-
-            function updatePillColors() {
-                document.querySelectorAll("#dashboardTabs .nav-link").forEach((pill) => {
-                    if (pill.id === "pill-settings" || pill.id === "add-profile-tab") return;
-                    const profileColor = pill.getAttribute("data-color") || "";
-                    const appliedColor =
-                        profileColor && colorMap[profileColor] ? colorMap[profileColor].full : colorMap.gray.full;
-                    if (pill.classList.contains("active")) {
-                        pill.style.backgroundColor = appliedColor;
-                        pill.style.color = "#fff";
-                    } else {
-                        pill.style.backgroundColor = "transparent";
-                        pill.style.color = appliedColor;
-                    }
-                });
-            }
-
-            document.getElementById("dashboardTabs").addEventListener("click", () => {
-                setTimeout(updatePillColors, 100);
-            });
-
-            function formatDateTimeLocal(date) {
-                const year = date.getFullYear();
-                const month = ("0" + (date.getMonth() + 1)).slice(-2);
-                const day = ("0" + date.getDate()).slice(-2);
-                const hours = ("0" + date.getHours()).slice(-2);
-                const minutes = ("0" + date.getMinutes()).slice(-2);
-                const seconds = ("0" + date.getSeconds()).slice(-2);
-                return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-            }
-
-            // Обновляем поле времени каждую секунду
-            setInterval(() => {
-                const input = document.getElementById("manual-time");
-                if (input.value) {
-                    let currentTime = new Date(input.value);
-                    currentTime.setSeconds(currentTime.getSeconds() + 1);
-                    input.value = formatDateTimeLocal(currentTime);
-                }
-            }, 1000);
-
-            // Получаем текущее время с ESP (ожидается, что ESP возвращает JSON с полем "time")
-            async function fetchTimeFromESP() {
-                try {
-                    const response = await fetch("/api/sync/device", { method: "POST" });
-                    const result = await response.json();
-                    if (result.time) {
-                        document.getElementById("manual-time").value = result.time;
-                    }
-                } catch (err) {
-                    console.error("Ошибка получения времени с ESP:", err);
-                }
-            }
-
-            async function loadData() {
-                try {
-                    const settingsResponse = await fetch("/api/settings");
-                    if (settingsResponse.ok) {
-                        const settings = await settingsResponse.json();
-                        document.getElementById("login").value = settings.accountLogin || "";
-                        document.getElementById("password").value = settings.accountPassword || "";
-                        document.getElementById("mode").value = settings.useAPMode ? "ap" : "wifi";
-                        document.getElementById("ap-ssid").value = settings.apSSID || "";
-                        document.getElementById("ap-password").value = settings.apPassword || "";
-                        document.getElementById("wifi-ssid").value = settings.wifiSSID || "";
-                        document.getElementById("wifi-password").value = settings.wifiPassword || "";
-                        document.getElementById("local-domain").value = settings.localDomain || "";
-                        document.getElementById("ntp-server").value = settings.ntpServer || "";
-                        document.getElementById("debug-enabled").checked = settings.debugEnabled;
-                        document.getElementById("mode").dispatchEvent(new Event("change"));
-                    }
-                } catch (err) {
-                    console.error("Ошибка загрузки настроек:", err);
-                }
-                try {
-                    const profilesResponse = await fetch("/api/profiles");
-                    if (profilesResponse.ok) {
-                        const profiles = await profilesResponse.json();
-                        profiles.forEach((profile) => {
-                            if (profile && profile.id) {
-                                const color = profile.color || "";
-                                const day = profile.day || "";
-                                createProfileTab(profile.id, profile.name, color, day, profile);
-                            }
-                        });
-                    }
-                } catch (err) {
-                    console.error("Ошибка загрузки профилей:", err);
-                }
-                updatePillColors();
-                await fetchTimeFromESP();
-            }
-
-            document.getElementById("mode").addEventListener("change", function () {
-                const apFields = document.getElementById("ap-fields");
-                const wifiFields = document.getElementById("wifi-fields");
-                if (this.value === "ap") {
-                    apFields.style.display = "block";
-                    wifiFields.style.display = "none";
-                } else if (this.value === "wifi") {
-                    apFields.style.display = "none";
-                    wifiFields.style.display = "block";
-                } else {
-                    apFields.style.display = "none";
-                    wifiFields.style.display = "none";
-                }
-            });
-
-            function createProfileTab(profileId, profileName, profileColor = "", profileDay = "", profileData = {}) {
-                if (document.getElementById(profileId)) return;
-                const newProfileTab = `
-          <li class="nav-item">
-            <a class="nav-link profile-pill" data-bs-toggle="pill" href="#${profileId}" data-color="${profileColor}" data-status="${
-                    profileData.status || "inactive"
-                }">
-              ${profileName}
-            </a>
-          </li>
-        `;
-                document.getElementById("add-profile-tab").parentElement.insertAdjacentHTML("beforebegin", newProfileTab);
-
-                let lessonsHtml = "";
-                Object.keys(profileData).forEach((key) => {
-                    if (key.startsWith("lesson") && typeof profileData[key] === "object") {
-                        const lesson = profileData[key];
-                        lessonsHtml += `
-              <tr>
-                <td>
-                  <input type="text" class="form-control form-control-table" placeholder="#" name="${key}.name" value="${
-                            lesson.name || ""
-                        }" />
-                </td>
-                <td>
-                  <input type="time" class="form-control form-control-table" placeholder="Начало" name="${key}.start" value="${
-                            lesson.start || ""
-                        }" />
-                </td>
-                <td>
-                  <input type="time" class="form-control form-control-table" placeholder="Конец" name="${key}.end" value="${
-                            lesson.end || ""
-                        }" />
-                </td>
-                <td>
-                  <button type="button" class="btn form-btn btn-danger remove-row" style="width: 85px">Удалить</button>
-                </td>
-              </tr>
-            `;
-                    }
-                });
-                if (!lessonsHtml) {
-                    lessonsHtml = `
-            <tr>
-              <td>
-                <input type="text" class="form-control form-control-table" placeholder="#" name="lesson1.name" />
-              </td>
-              <td>
-                <input type="time" class="form-control form-control-table" placeholder="Начало" name="lesson1.start" />
-              </td>
-              <td>
-                <input type="time" class="form-control form-control-table" placeholder="Конец" name="lesson1.end" />
-              </td>
-              <td>
-                <button type="button" class="btn form-btn btn-danger remove-row" style="width: 85px">Удалить</button>
-              </td>
-            </tr>
-          `;
-                }
-                const profileHeader = `
-          <div class="row mb-3 profile-header align-items-center" style="--bs-gutter-x: 0.5rem; --bs-gutter-y: 0.5rem">
-            <small class="text-muted" id="${profileId}-status-label">
-              ${profileData.status === "active" ? "Активен" : "Не активен"}
-            </small>
-            <div class="col-md-10 col-sm-8">
-              <label for="${profileId}-name" class="form-label">Название профиля</label>
-              <input type="text" class="form-control" id="${profileId}-name" name="name" value="${profileName}" />
-            </div>
-            <div class="col-md-2 col-sm-4">
-              <label for="${profileId}-color" class="form-label">Цвет</label>
-              <select id="${profileId}-color" name="color" class="form-select">
-                <option value="" ${!profileColor ? "selected" : ""}>--</option>
-                <option value="red" ${profileColor === "red" ? "selected" : ""}>Красный</option>
-                <option value="yellow" ${profileColor === "yellow" ? "selected" : ""}>Жёлтый</option>
-                <option value="green" ${profileColor === "green" ? "selected" : ""}>Зелёный</option>
-                <option value="blue" ${profileColor === "blue" ? "selected" : ""}>Синий</option>
-              </select>
-            </div>
-            <div class="col-md-2 col-sm-4">
-              <label for="${profileId}-day" class="form-label">День недели</label>
-              <select id="${profileId}-day" name="day" class="form-select">
-                <option value="" ${!profileDay ? "selected" : ""}>--</option>
-                <option value="monday" ${profileDay === "monday" ? "selected" : ""}>Понедельник</option>
-                <option value="tuesday" ${profileDay === "tuesday" ? "selected" : ""}>Вторник</option>
-                <option value="wednesday" ${profileDay === "wednesday" ? "selected" : ""}>Среда</option>
-                <option value="thursday" ${profileDay === "thursday" ? "selected" : ""}>Четверг</option>
-                <option value="friday" ${profileDay === "friday" ? "selected" : ""}>Пятница</option>
-                <option value="saturday" ${profileDay === "saturday" ? "selected" : ""}>Суббота</option>
-                <option value="sunday" ${profileDay === "sunday" ? "selected" : ""}>Воскресенье</option>
-		<option value="none" ${profileDay === "none" ? "selected" : ""}>любой день</option>
-              </select>
-            </div>
-          </div>
-        `;
-                const newProfileContent = `
-          <div class="tab-pane fade" id="${profileId}">
-            <h2>Профиль</h2>
-            <form id="${profileId}-form">
-              ${profileHeader}
-              <div class="bdr table-responsive">
-                <table id="lesson-table${profileId}" class="table border-none">
-                  <thead>
-                    <tr>
-                      <th class="bord hb" scope="col" style="width: 55px">Урок</th>
-                      <th class="bord hb" scope="col">Начало</th>
-                      <th class="bord hb" scope="col">Конец</th>
-                      <th scope="col" class="hb" style="width: 85px"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${lessonsHtml}
-                  </tbody>
-                </table>
-              </div>
-              <button type="button" class="btn btn-primary mt-3" id="add-row${profileId}">Добавить запись</button>
-              <button type="submit" class="btn btn-success mt-3">Сохранить</button>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Пароль (Аккаунт)</label>
+                        <input type="password" class="form-control" id="password" name="accountPassword" required />
+                    </div>
+                </div>
+                <!-- Режим подключения -->
+                <div class="settings-group">
+                    <h5>Режим подключения</h5>
+                    <div class="mb-3">
+                        <label for="mode" class="form-label">Выбор режима</label>
+                        <select class="form-select" id="mode" name="mode" required>
+                            <option value="ap">Точка доступа (AP)</option>
+                            <option value="wifi">WiFi-клиент</option>
+                        </select>
+                    </div>
+                    <div id="ap-fields" style="display: none">
+                        <div class="mb-3">
+                            <label for="ap-ssid" class="form-label">Имя сети (AP)</label>
+                            <input type="text" class="form-control" id="ap-ssid" name="ap-ssid" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="ap-password" class="form-label">Пароль сети (AP)</label>
+                            <input type="password" class="form-control" id="ap-password" name="ap-password" />
+                        </div>
+                    </div>
+                    <div id="wifi-fields" style="display: none">
+                        <div class="mb-3">
+                            <label for="wifi-ssid" class="form-label">Имя WiFi сети</label>
+                            <input type="text" class="form-control" id="wifi-ssid" name="wifi-ssid" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="wifi-password" class="form-label">Пароль WiFi сети</label>
+                            <input type="password" class="form-control" id="wifi-password" name="wifi-password" />
+                        </div>
+                    </div>
+                    <div style="padding-bottom: 7px">
+                        <small style="color: rgb(220, 53, 69)">(Применяется после перезагрузки)</small>
+                    </div>
+                </div>
+                <!-- Синхронизация времени -->
+                <div class="settings-group">
+                    <h5>Синхронизация времени</h5>
+                    <div class="mb-3">
+                        <input type="datetime-local" step="1" class="form-control" id="manual-time" name="manualTime" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="ntp-server" class="form-label">NTP Сервер</label>
+                        <input type="text" class="form-control" id="ntp-server" name="ntpServer" required />
+                    </div>
+                    <div class="row mb-3" style="--bs-gutter-x: 0.5rem; --bs-gutter-y: 0.5rem">
+                        <div class="col-sm-12 col-md-3 col-lg-4">
+                            <button type="button" class="btn btn-success" style="width: 100%" id="save-manual-time">Сохранить время</button>
+                        </div>
+                        <div class="col-sm-12 col-md-4 col-lg-4">
+                            <button type="button" class="btn btn-secondary" style="width: 100%" id="sync-ntp-time">Синхронизация с NTP</button>
+                        </div>
+                        <div class="col-sm-12 col-md-5 col-lg-4">
+                            <button type="button" class="btn btn-secondary" style="width: 100%" id="sync-device-time">Синхронизация с устройством</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Настройки звонка -->
+                <div class="settings-group">
+                    <h5>Настройки звонка</h5>
+                    <div class="mb-3">
+                        <label for="bell_duration" class="form-label">Длительность звонка (сек)</label>
+                        <input type="number" class="form-control" id="bell_duration" name="bell_duration" min="1" max="60" required />
+                    </div>
+                </div>
+                <!-- Настройки прокси -->
+                <div class="settings-group">
+                    <h5>Настройки прокси</h5>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="proksy_mod" name="proksy_mod" />
+                        <label class="form-check-label" for="proksy_mod">Использовать прокси</label>
+                    </div>
+                    <div class="mb-3">
+                        <label for="proksy_ip" class="form-label">URL прокси-сервера</label>
+                        <input type="text" class="form-control" id="proksy_ip" name="proksy_ip" pattern="^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$" title="Введите корректный IP адрес" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="proksy_port" class="form-label">Порт прокси-сервера</label>
+                        <input type="number" class="form-control" id="proksy_port" name="proksy_port" min="1" max="65535" title="Введите корректный порт" />
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <h5>Debug режим</h5>
+                    <div class="mb-3">
+                        <label for="local-domain" class="form-label">Локальное доменное имя</label>
+                        <input type="text" class="form-control" id="local-domain" name="localDomain" required />
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="debug-enabled" name="debugEnabled" />
+                        <label class="form-check-label" for="debug-enabled">Включить debug режим</label>
+                    </div>
+                    <div style="padding-bottom: 7px">
+                        <small style="color: rgb(220, 53, 69)">(Применяется после перезагрузки)</small>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success">Сохранить настройки</button>
             </form>
-          </div>
-        `;
-                document.querySelector(".tab-content").insertAdjacentHTML("beforeend", newProfileContent);
-                addRow(`lesson-table${profileId}`, `add-row${profileId}`);
-                const formEl = document.getElementById(`${profileId}-form`);
-                if (formEl) {
-                    formEl.addEventListener("submit", async function (e) {
-                        e.preventDefault();
-                        await saveProfile(profileId);
+        </div>
+        <!-- Добавление профиля -->
+        <div class="tab-pane fade" id="add-profile">
+            <h2>Добавить профиль</h2>
+            <form id="add-profile-form">
+                <div class="mb-3">
+                    <label for="new-profile-name" class="form-label">Название нового профиля</label>
+                    <input type="text" class="form-control" id="new-profile-name" name="new-profile-name" required />
+                </div>
+                <button type="submit" class="btn btn-primary">Добавить</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        function showToast(message, type = "info") {
+            const toastId = "toast-" + Date.now();
+            const toastHtml = `
+                <div id="${toastId}" class="toast align-items-center text-bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">${message}</div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+            document.getElementById("toast-container").insertAdjacentHTML("beforeend", toastHtml);
+            const toastElement = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
+            toast.show();
+            toastElement.addEventListener("hidden.bs.toast", () => {
+                toastElement.remove();
+            });
+        }
+
+        function canAddProfile() {
+            return document.querySelectorAll("#dashboardTabs .nav-link.profile-pill").length < 7;
+        }
+
+        const colorMap = {
+            red: { full: "rgb(220,53,69)" },
+            yellow: { full: "rgb(255,193,7)" },
+            green: { full: "rgb(25,135,84)" },
+            blue: { full: "rgb(13,110,253)" },
+            gray: { full: "rgb(108,117,125)" },
+        };
+
+        const dayMap = {
+            monday: "Понедельник",
+            tuesday: "Вторник",
+            wednesday: "Среда",
+            thursday: "Четверг",
+            friday: "Пятница",
+            saturday: "Суббота",
+            sunday: "Воскресенье",
+        };
+
+        function updatePillColors() {
+            document.querySelectorAll("#dashboardTabs .nav-link").forEach((pill) => {
+                if (pill.id === "pill-settings" || pill.id === "add-profile-tab") return;
+                const profileColor = pill.getAttribute("data-color") || "";
+                const appliedColor = profileColor && colorMap[profileColor] ? colorMap[profileColor].full : colorMap.gray.full;
+                if (pill.classList.contains("active")) {
+                    pill.style.backgroundColor = appliedColor;
+                    pill.style.color = "#fff";
+                } else {
+                    pill.style.backgroundColor = "transparent";
+                    pill.style.color = appliedColor;
+                }
+            });
+        }
+
+        document.getElementById("dashboardTabs").addEventListener("click", () => {
+            setTimeout(updatePillColors, 100);
+        });
+
+        function formatDateTimeLocal(date) {
+            const year = date.getFullYear();
+            const month = ("0" + (date.getMonth() + 1)).slice(-2);
+            const day = ("0" + date.getDate()).slice(-2);
+            const hours = ("0" + date.getHours()).slice(-2);
+            const minutes = ("0" + date.getMinutes()).slice(-2);
+            const seconds = ("0" + date.getSeconds()).slice(-2);
+            return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+        }
+
+        // Обновляем поле времени каждую секунду
+        setInterval(() => {
+            const input = document.getElementById("manual-time");
+            if (input.value) {
+                let currentTime = new Date(input.value);
+                currentTime.setSeconds(currentTime.getSeconds() + 1);
+                input.value = formatDateTimeLocal(currentTime);
+            }
+        }, 1000);
+
+        // Получаем текущее время с ESP (ожидается, что ESP возвращает JSON с полем "time")
+        async function fetchTimeFromESP() {
+            try {
+                const response = await fetch("/api/sync/device", { method: "POST" });
+                const result = await response.json();
+                if (result.time) {
+                    document.getElementById("manual-time").value = result.time;
+                }
+            } catch (err) {
+                console.error("Ошибка получения времени с ESP:", err);
+            }
+        }
+
+        async function loadData() {
+            try {
+                const settingsResponse = await fetch("/api/settings");
+                if (settingsResponse.ok) {
+                    const settings = await settingsResponse.json();
+                    document.getElementById("login").value = settings.accountLogin || "";
+                    document.getElementById("password").value = settings.accountPassword || "";
+                    document.getElementById("mode").value = settings.useAPMode ? "ap" : "wifi";
+                    document.getElementById("ap-ssid").value = settings.apSSID || "";
+                    document.getElementById("ap-password").value = settings.apPassword || "";
+                    document.getElementById("wifi-ssid").value = settings.wifiSSID || "";
+                    document.getElementById("wifi-password").value = settings.wifiPassword || "";
+                    document.getElementById("local-domain").value = settings.localDomain || "";
+                    document.getElementById("ntp-server").value = settings.ntpServer || "";
+                    document.getElementById("debug-enabled").checked = settings.debugEnabled;
+                    document.getElementById("bell_duration").value = settings.bell_duration || 2; // Default to 10 seconds
+                    document.getElementById("proksy_mod").checked = settings.proksy_mod;
+                    document.getElementById("proksy_ip").value = settings.proksy_ip || "";
+                    document.getElementById("proksy_port").value = settings.proksy_port || "";
+                    document.getElementById("mode").dispatchEvent(new Event("change"));
+                }
+            } catch (err) {
+                console.error("Ошибка загрузки настроек:", err);
+            }
+
+            try {
+                const profilesResponse = await fetch("/api/profiles");
+                if (profilesResponse.ok) {
+                    const profiles = await profilesResponse.json();
+                    profiles.forEach((profile) => {
+                        if (profile && profile.id) {
+                            const color = profile.color || "";
+                            const day = profile.day || "";
+                            createProfileTab(profile.id, profile.name, color, day, profile);
+                        }
                     });
                 }
-                document.getElementById(`${profileId}-color`).addEventListener("change", function () {
-                    const selectedColor = this.value;
-                    if (selectedColor && colorMap[selectedColor]) {
-                        this.style.backgroundColor = colorMap[selectedColor].full;
-                        this.style.color = "#fff";
-                    } else {
-                        this.style.backgroundColor = "transparent";
-                        this.style.color = "#495057";
-                    }
-                    const pill = document.querySelector(`#dashboardTabs .profile-pill[href="#${profileId}"]`);
-                    if (pill) {
-                        pill.setAttribute("data-color", selectedColor);
-                        updatePillColors();
-                    }
-                });
-                document.getElementById(`${profileId}-day`).addEventListener("change", function () {
-                    const selectedDay = this.value;
-                    const pill = document.querySelector(`#dashboardTabs .profile-pill[href="#${profileId}"]`);
-                    if (pill) {
-                        pill.setAttribute("data-day", selectedDay);
-                    }
-                });
+            } catch (err) {
+                console.error("Ошибка загрузки профилей:", err);
             }
 
-            function addRow(tableId, addButtonId) {
-                document.getElementById(addButtonId).addEventListener("click", function () {
-                    const table = document.querySelector(`#${tableId} tbody`);
-                    const rowCount = table.querySelectorAll("tr").length + 1;
-                    const newRow = `
-            <tr>
-              <td>
-                <input type="text" class="form-control form-control-table" placeholder="#" name="lesson${rowCount}.name" />
-              </td>
-              <td>
-                <input type="time" class="form-control form-control-table" placeholder="Начало" name="lesson${rowCount}.start" />
-              </td>
-              <td>
-                <input type="time" class="form-control form-control-table" placeholder="Конец" name="lesson${rowCount}.end" />
-              </td>
-              <td>
-                <button type="button" class="btn form-btn btn-danger remove-row" style="width: 85px">Удалить</button>
-              </td>
-            </tr>
-          `;
-                    table.insertAdjacentHTML("beforeend", newRow);
-                });
-            }
+            updatePillColors();
+            await fetchTimeFromESP();
+        }
 
-            document.addEventListener("click", function (e) {
-                if (e.target.classList.contains("remove-row")) {
-                    e.target.closest("tr").remove();
+        document.getElementById("mode").addEventListener("change", function () {
+            const apFields = document.getElementById("ap-fields");
+            const wifiFields = document.getElementById("wifi-fields");
+            if (this.value === "ap") {
+                apFields.style.display = "block";
+                wifiFields.style.display = "none";
+            } else if (this.value === "wifi") {
+                apFields.style.display = "none";
+                wifiFields.style.display = "block";
+            } else {
+                apFields.style.display = "none";
+                wifiFields.style.display = "none";
+            }
+        });
+
+        function createProfileTab(profileId, profileName, profileColor = "", profileDay = "", profileData = {}) {
+            if (document.getElementById(profileId)) return;
+            const newProfileTab = `
+                <li class="nav-item">
+                    <a class="nav-link profile-pill" data-bs-toggle="pill" href="#${profileId}" data-color="${profileColor}" data-status="${profileData.status || "inactive"}">
+                        ${profileName}
+                    </a>
+                </li>
+            `;
+            document.getElementById("add-profile-tab").parentElement.insertAdjacentHTML("beforebegin", newProfileTab);
+
+            let lessonsHtml = "";
+            Object.keys(profileData).forEach((key) => {
+                if (key.startsWith("lesson") && typeof profileData[key] === "object") {
+                    const lesson = profileData[key];
+                    lessonsHtml += `
+                        <tr>
+                            <td>
+                                <input type="text" class="form-control form-control-table" placeholder="#" name="${key}.name" value="${lesson.name || ""}" />
+                            </td>
+                            <td>
+                                <input type="time" class="form-control form-control-table" placeholder="Начало" name="${key}.start" value="${lesson.start || ""}" />
+                            </td>
+                            <td>
+                                <input type="time" class="form-control form-control-table" placeholder="Конец" name="${key}.end" value="${lesson.end || ""}" />
+                            </td>
+                            <td>
+                                <button type="button" class="btn form-btn btn-danger remove-row" style="width: 85px">Удалить</button>
+                            </td>
+                        </tr>
+                    `;
                 }
             });
 
-            document.getElementById("add-profile-form").addEventListener("submit", function (e) {
-                e.preventDefault();
-                if (!canAddProfile()) {
-                    showToast("Максимум 4 профиля!", "warning");
-                    return;
-                }
-                const newProfileName = document.getElementById("new-profile-name").value.trim();
-                if (!newProfileName) {
-                    showToast("Введите название профиля!", "warning");
-                    return;
-                }
-                const profileId = "profile" + Date.now();
-                createProfileTab(profileId, newProfileName, "", "", {});
-                document.getElementById("new-profile-name").value = "";
-                const triggerEl = document.querySelector(`a[href="#${profileId}"]`);
-                const tab = new bootstrap.Tab(triggerEl);
-                tab.show();
-            });
-
-            async function saveProfile(profileId) {
-                const form = document.getElementById(`${profileId}-form`);
-                const formData = new FormData(form);
-                const profileData = { id: profileId };
-                profileData.name = formData.get("name");
-                profileData.color = formData.get("color");
-                profileData.day = formData.get("day");
-                const lessons = {};
-                for (let [key, value] of formData.entries()) {
-                    if (key.startsWith("lesson")) {
-                        const [lessonKey, field] = key.split(".");
-                        if (!lessons[lessonKey]) lessons[lessonKey] = {};
-                        lessons[lessonKey][field] = value;
-                    }
-                }
-                Object.assign(profileData, lessons);
-                try {
-                    const response = await fetch("/api/profiles", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(profileData),
-                    });
-                    const result = await response.json();
-                    showToast(
-                        result.success ? "Профиль сохранён" : "Ошибка сохранения профиля",
-                        result.success ? "success" : "danger"
-                    );
-                } catch (err) {
-                    console.error("Ошибка при сохранении профиля:", err);
-                    showToast("Ошибка при сохранении профиля", "danger");
-                }
+            if (!lessonsHtml) {
+                lessonsHtml = `
+                    <tr>
+                        <td>
+                            <input type="text" class="form-control form-control-table" placeholder="#" name="lesson1.name" />
+                        </td>
+                        <td>
+                            <input type="time" class="form-control form-control-table" placeholder="Начало" name="lesson1.start" />
+                        </td>
+                        <td>
+                            <input type="time" class="form-control form-control-table" placeholder="Конец" name="lesson1.end" />
+                        </td>
+                        <td>
+                            <button type="button" class="btn form-btn btn-danger remove-row" style="width: 85px">Удалить</button>
+                        </td>
+                    </tr>
+                `;
             }
 
-            document.getElementById("settings-form").addEventListener("submit", async function (e) {
-                e.preventDefault();
-                const formData = new FormData(this);
-                const settings = {
-                    apSSID: formData.get("ap-ssid"),
-                    apPassword: formData.get("ap-password"),
-                    wifiSSID: formData.get("wifi-ssid"),
-                    wifiPassword: formData.get("wifi-password"),
-                    useAPMode: formData.get("mode") === "ap",
-                    accountLogin: formData.get("accountLogin") || formData.get("login"),
-                    accountPassword: formData.get("accountPassword") || formData.get("password"),
-                    localDomain: formData.get("localDomain"),
-                    ntpServer: formData.get("ntpServer"),
-                    debugEnabled: document.getElementById("debug-enabled").checked,
-                };
-                try {
-                    const response = await fetch("/api/settings", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(settings),
-                    });
-                    const result = await response.json();
-                    showToast(
-                        result.success ? "Настройки успешно сохранены" : "Ошибка при сохранении настроек",
-                        result.success ? "success" : "danger"
-                    );
+            const profileHeader = `
+                <div class="row mb-3 profile-header align-items-center" style="--bs-gutter-x: 0.5rem; --bs-gutter-y: 0.5rem">
+                    <small class="text-muted" id="${profileId}-status-label">
+                        ${profileData.status === "active" ? "Активен" : "Не активен"}
+                    </small>
+                    <div class="col-md-10 col-sm-8">
+                        <label for="${profileId}-name" class="form-label">Название профиля</label>
+                        <input type="text" class="form-control" id="${profileId}-name" name="name" value="${profileName}" />
+                    </div>
+                    <div class="col-md-2 col-sm-4">
+                        <label for="${profileId}-color" class="form-label">Цвет</label>
+                        <select id="${profileId}-color" name="color" class="form-select">
+                            <option value="" ${!profileColor ? "selected" : ""}>--</option>
+                            <option value="red" ${profileColor === "red" ? "selected" : ""}>Красный</option>
+                            <option value="yellow" ${profileColor === "yellow" ? "selected" : ""}>Жёлтый</option>
+                            <option value="green" ${profileColor === "green" ? "selected" : ""}>Зелёный</option>
+                            <option value="blue" ${profileColor === "blue" ? "selected" : ""}>Синий</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 col-sm-4">
+                        <label for="${profileId}-day" class="form-label">День недели</label>
+                        <select id="${profileId}-day" name="day" class="form-select">
+                            <option value="" ${!profileDay ? "selected" : ""}>--</option>
+                            <option value="monday" ${profileDay === "monday" ? "selected" : ""}>Понедельник</option>
+                            <option value="tuesday" ${profileDay === "tuesday" ? "selected" : ""}>Вторник</option>
+                            <option value="wednesday" ${profileDay === "wednesday" ? "selected" : ""}>Среда</option>
+                            <option value="thursday" ${profileDay === "thursday" ? "selected" : ""}>Четверг</option>
+                            <option value="friday" ${profileDay === "friday" ? "selected" : ""}>Пятница</option>
+                            <option value="saturday" ${profileDay === "saturday" ? "selected" : ""}>Суббота</option>
+                            <option value="sunday" ${profileDay === "sunday" ? "selected" : ""}>Воскресенье</option>
+                            <option value="none" ${profileDay === "none" ? "selected" : ""}>любой день</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+
+            const newProfileContent = `
+                <div class="tab-pane fade" id="${profileId}">
+                    <h2>Профиль</h2>
+                    <form id="${profileId}-form">
+                        ${profileHeader}
+                        <div class="bdr table-responsive">
+                            <table id="lesson-table${profileId}" class="table border-none">
+                                <thead>
+                                    <tr>
+                                        <th class="bord hb" scope="col" style="width: 55px">Урок</th>
+                                        <th class="bord hb" scope="col">Начало</th>
+                                        <th class="bord hb" scope="col">Конец</th>
+                                        <th scope="col" class="hb" style="width: 85px"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${lessonsHtml}
+                                </tbody>
+                            </table>
+                        </div>
+                        <button type="button" class="btn btn-primary mt-3" id="add-row${profileId}">Добавить запись</button>
+                        <button type="submit" class="btn btn-success mt-3">Сохранить</button>
+                    </form>
+                </div>
+            `;
+            document.querySelector(".tab-content").insertAdjacentHTML("beforeend", newProfileContent);
+            addRow(`lesson-table${profileId}`, `add-row${profileId}`);
+
+            const formEl = document.getElementById(`${profileId}-form`);
+            if (formEl) {
+                formEl.addEventListener("submit", async function (e) {
+                    e.preventDefault();
+                    await saveProfile(profileId);
+                });
+            }
+
+            document.getElementById(`${profileId}-color`).addEventListener("change", function () {
+                const selectedColor = this.value;
+                if (selectedColor && colorMap[selectedColor]) {
+                    this.style.backgroundColor = colorMap[selectedColor].full;
+                    this.style.color = "#fff";
+                } else {
+                    this.style.backgroundColor = "transparent";
+                    this.style.color = "#495057";
+                }
+                const pill = document.querySelector(`#dashboardTabs .profile-pill[href="#${profileId}"]`);
+                if (pill) {
+                    pill.setAttribute("data-color", selectedColor);
                     updatePillColors();
-                } catch (err) {
-                    console.error("Ошибка при сохранении настроек:", err);
-                    showToast("Ошибка при сохранении настроек", "danger");
                 }
             });
 
-            document.getElementById("sync-device-time").addEventListener("click", async function () {
-                try {
-                    const response = await fetch("/api/sync/device", { method: "POST" });
-                    const result = await response.json();
-                    if (result.time) {
-                        document.getElementById("manual-time").value = result.time;
-                    }
-                    showToast(
-                        result.success ? "Время синхронизировано с устройством" : "Ошибка синхронизации с устройством",
-                        result.success ? "success" : "danger"
-                    );
-                } catch (err) {
-                    console.error("Ошибка синхронизации с устройством:", err);
-                    showToast("Ошибка синхронизации с устройством", "danger");
+            document.getElementById(`${profileId}-day`).addEventListener("change", function () {
+                const selectedDay = this.value;
+                const pill = document.querySelector(`#dashboardTabs .profile-pill[href="#${profileId}"]`);
+                if (pill) {
+                    pill.setAttribute("data-day", selectedDay);
                 }
             });
+        }
 
-            document.getElementById("sync-ntp-time").addEventListener("click", async function () {
-                try {
-                    const response = await fetch("/api/sync/ntp", { method: "POST" });
-                    const result = await response.json();
-                    if (result.time) {
-                        document.getElementById("manual-time").value = result.time;
-                    }
-                    showToast(
-                        result.success ? "Время синхронизировано с NTP-сервером" : "Ошибка синхронизации с NTP-сервером",
-                        result.success ? "success" : "danger"
-                    );
-                } catch (err) {
-                    console.error("Ошибка синхронизации с NTP:", err);
-                    showToast("Ошибка синхронизации с NTP", "danger");
-                }
+        function addRow(tableId, addButtonId) {
+            document.getElementById(addButtonId).addEventListener("click", function () {
+                const table = document.querySelector(`#${tableId} tbody`);
+                const rowCount = table.querySelectorAll("tr").length + 1;
+                const newRow = `
+                    <tr>
+                        <td>
+                            <input type="text" class="form-control form-control-table" placeholder="#" name="lesson${rowCount}.name" />
+                        </td>
+                        <td>
+                            <input type="time" class="form-control form-control-table" placeholder="Начало" name="lesson${rowCount}.start" />
+                        </td>
+                        <td>
+                            <input type="time" class="form-control form-control-table" placeholder="Конец" name="lesson${rowCount}.end" />
+                        </td>
+                        <td>
+                            <button type="button" class="btn form-btn btn-danger remove-row" style="width: 85px">Удалить</button>
+                        </td>
+                    </tr>
+                `;
+                table.insertAdjacentHTML("beforeend", newRow);
             });
+        }
 
-            document.getElementById("save-manual-time").addEventListener("click", async function () {
-                const time = document.getElementById("manual-time").value;
-                try {
-                    const response = await fetch("/api/sync/manual", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ time }),
-                    });
-                    const result = await response.json();
-                    if (result.time) {
-                        document.getElementById("manual-time").value = result.time;
-                    }
-                    showToast(
-                        result.success ? "Время установлено" : "Ошибка установки времени",
-                        result.success ? "success" : "danger"
-                    );
-                } catch (err) {
-                    console.error("Ошибка установки времени:", err);
-                    showToast("Ошибка установки времени", "danger");
+        document.addEventListener("click", function (e) {
+            if (e.target.classList.contains("remove-row")) {
+                e.target.closest("tr").remove();
+            }
+        });
+
+        document.getElementById("add-profile-form").addEventListener("submit", function (e) {
+            e.preventDefault();
+            if (!canAddProfile()) {
+                showToast("Максимум 7 профилей!", "warning");
+                return;
+            }
+            const newProfileName = document.getElementById("new-profile-name").value.trim();
+            if (!newProfileName) {
+                showToast("Введите название профиля!", "warning");
+                return;
+            }
+            const profileId = "profile" + Date.now();
+            createProfileTab(profileId, newProfileName, "", "", {});
+            document.getElementById("new-profile-name").value = "";
+            const triggerEl = document.querySelector(`a[href="#${profileId}"]`);
+            const tab = new bootstrap.Tab(triggerEl);
+            tab.show();
+        });
+
+        async function saveProfile(profileId) {
+            const form = document.getElementById(`${profileId}-form`);
+            const formData = new FormData(form);
+            const profileData = { id: profileId };
+            profileData.name = formData.get("name");
+            profileData.color = formData.get("color");
+            profileData.day = formData.get("day");
+            const lessons = {};
+            for (let [key, value] of formData.entries()) {
+                if (key.startsWith("lesson")) {
+                    const [lessonKey, field] = key.split(".");
+                    if (!lessons[lessonKey]) lessons[lessonKey] = {};
+                    lessons[lessonKey][field] = value;
                 }
-            });
+            }
+            Object.assign(profileData, lessons);
 
-            window.onload = loadData;
-        </script>
-    </body>
+            try {
+                const response = await fetch("/api/profiles", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(profileData),
+                });
+                const result = await response.json();
+                showToast(
+                    result.success ? "Профиль сохранён" : "Ошибка сохранения профиля",
+                    result.success ? "success" : "danger"
+                );
+            } catch (err) {
+                console.error("Ошибка при сохранении профиля:", err);
+                showToast("Ошибка при сохранении профиля", "danger");
+            }
+        }
+
+        document.getElementById("settings-form").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const settings = {
+                apSSID: formData.get("ap-ssid"),
+                apPassword: formData.get("ap-password"),
+                wifiSSID: formData.get("wifi-ssid"),
+                wifiPassword: formData.get("wifi-password"),
+                useAPMode: formData.get("mode") === "ap",
+                accountLogin: formData.get("accountLogin") || formData.get("login"),
+                accountPassword: formData.get("accountPassword") || formData.get("password"),
+                localDomain: formData.get("localDomain"),
+                ntpServer: formData.get("ntpServer"),
+                debugEnabled: document.getElementById("debug-enabled").checked,
+                bell_duration: formData.get("bell_duration"),
+                proksy_mod: document.getElementById("proksy_mod").checked,
+                proksy_ip: formData.get("proksy_ip"),
+                proksy_port: formData.get("proksy_port"),
+            };
+
+            try {
+                const response = await fetch("/api/settings", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(settings),
+                });
+                const result = await response.json();
+                showToast(
+                    result.success ? "Настройки успешно сохранены" : "Ошибка при сохранении настроек",
+                    result.success ? "success" : "danger"
+                );
+                updatePillColors();
+            } catch (err) {
+                console.error("Ошибка при сохранении настроек:", err);
+                showToast("Ошибка при сохранении настроек", "danger");
+            }
+        });
+
+        document.getElementById("sync-device-time").addEventListener("click", async function () {
+            try {
+                const response = await fetch("/api/sync/device", { method: "POST" });
+                const result = await response.json();
+                if (result.time) {
+                    document.getElementById("manual-time").value = result.time;
+                }
+                showToast(
+                    result.success ? "Время синхронизировано с устройством" : "Ошибка синхронизации с устройством",
+                    result.success ? "success" : "danger"
+                );
+            } catch (err) {
+                console.error("Ошибка синхронизации с устройством:", err);
+                showToast("Ошибка синхронизации с устройством", "danger");
+            }
+        });
+
+        document.getElementById("sync-ntp-time").addEventListener("click", async function () {
+            try {
+                const response = await fetch("/api/sync/ntp", { method: "POST" });
+                const result = await response.json();
+                if (result.time) {
+                    document.getElementById("manual-time").value = result.time;
+                }
+                showToast(
+                    result.success ? "Время синхронизировано с NTP-сервером" : "Ошибка синхронизации с NTP-сервером",
+                    result.success ? "success" : "danger"
+                );
+            } catch (err) {
+                console.error("Ошибка синхронизации с NTP:", err);
+                showToast("Ошибка синхронизации с NTP", "danger");
+            }
+        });
+
+        document.getElementById("save-manual-time").addEventListener("click", async function () {
+            const time = document.getElementById("manual-time").value;
+            try {
+                const response = await fetch("/api/sync/manual", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ time }),
+                });
+                const result = await response.json();
+                if (result.time) {
+                    document.getElementById("manual-time").value = result.time;
+                }
+                showToast(
+                    result.success ? "Время установлено" : "Ошибка установки времени",
+                    result.success ? "success" : "danger"
+                );
+            } catch (err) {
+                console.error("Ошибка установки времени:", err);
+                showToast("Ошибка установки времени", "danger");
+            }
+        });
+
+        window.onload = loadData;
+    </script>
+</body>
 </html>

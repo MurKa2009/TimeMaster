@@ -4,7 +4,9 @@
 #include "handlers/profiles.h"
 #include "timeManager.h"
 
-// Helper function to convert "HH:MM" to seconds since midnight
+unsigned long bellStartTime = 0;
+bool bellRinging = false;
+
 int getTimeInSeconds(String timeStr)
 {
   int colonIndex = timeStr.indexOf(':');
@@ -13,14 +15,13 @@ int getTimeInSeconds(String timeStr)
   return hours * 3600 + minutes * 60;
 }
 
-// Function to ring the bell
-void ringBell(int duration)
+void ringBell()
 {
-  digitalWrite(BELL_PIN, LOW); // Activate the bell
+  digitalWrite(BELL_PIN, LOW);
   DebugPrintln(String(getCurrentTime()));
   DebugPrintln("Bell ringing...");
-  delay(duration * 1000);       // Ring for the specified duration
-  digitalWrite(BELL_PIN, HIGH); // Deactivate the bell
+  delay(deviceSettings.bell_duration * 1000);
+  digitalWrite(BELL_PIN, HIGH);
   DebugPrintln("Bell stopped.");
 }
 
@@ -42,11 +43,10 @@ int getDayOfWeekIndex(const String &day)
     return 6;
   if (day == "none")
     return 7;
-  return -1; // Invalid day
+  return -1;
 }
 
-// Function to check if it's time to ring the bell
-void checkBellSchedule(int currentTime, const String &color)
+void checkBellSchedule(int currentTime, const String &profileName, int workMode)
 {
   JsonDocument doc;
   if (!loadProfiles(doc))
@@ -59,19 +59,15 @@ void checkBellSchedule(int currentTime, const String &color)
   bool dayProfileFound = false;
 
   JsonArray profiles = doc.as<JsonArray>();
-  for (JsonObject profile : profiles)
-  {
-    if (profile.containsKey("color") && profile.containsKey("day"))
-    {
-      String profileColor = profile["color"].as<String>();
-      String day = profile["day"].as<String>();
 
-      // Check if the profile is for the current day of the week
-      if (currentDayOfWeek == getDayOfWeekIndex(day))
+  if (workMode == 0)
+  {
+    for (JsonObject profile : profiles)
+    {
+      if (profile.containsKey("name") && profile["name"].as<String>() == profileName)
       {
-        dayProfileFound = true;
         for (int i = 1; i <= 3; i++)
-        { // Check each lesson in the profile
+        {
           String lessonKey = "lesson" + String(i);
           if (profile.containsKey(lessonKey))
           {
@@ -79,36 +75,35 @@ void checkBellSchedule(int currentTime, const String &color)
             String startTime = lesson["start"].as<String>();
             String endTime = lesson["end"].as<String>();
 
-            // Convert "HH:MM" to seconds since the start of the day
             int startSeconds = getTimeInSeconds(startTime);
             int endSeconds = getTimeInSeconds(endTime);
 
-            // Check if the current time falls within the lesson time range
+            DebugPrintln("Lesson " + String(i) + ": Start=" + String(startSeconds) + ", End=" + String(endSeconds));
+
             if (currentTime == startSeconds || currentTime == endSeconds)
             {
-              ringBell(4); // Bell rings for 4 seconds (change as needed)
-              return;      // Stop checking other profiles
+              ringBell();
+              return;
             }
           }
         }
       }
     }
   }
-
-  // If no profile for the current day was found, check the "any" day profile
-  if (!dayProfileFound)
+  else if (workMode == 1)
   {
     for (JsonObject profile : profiles)
     {
-      if (profile.containsKey("color") && profile.containsKey("day"))
+      if (profile.containsKey("name") && profile.containsKey("day"))
       {
-        String profileColor = profile["color"].as<String>();
+        String profileNameKey = profile["name"].as<String>();
         String day = profile["day"].as<String>();
 
-        if (day == "none" && profileColor == color)
+        if (currentDayOfWeek == getDayOfWeekIndex(day))
         {
+          dayProfileFound = true;
           for (int i = 1; i <= 3; i++)
-          { // Check each lesson in the profile
+          {
             String lessonKey = "lesson" + String(i);
             if (profile.containsKey(lessonKey))
             {
@@ -116,15 +111,82 @@ void checkBellSchedule(int currentTime, const String &color)
               String startTime = lesson["start"].as<String>();
               String endTime = lesson["end"].as<String>();
 
-              // Convert "HH:MM" to seconds since the start of the day
               int startSeconds = getTimeInSeconds(startTime);
               int endSeconds = getTimeInSeconds(endTime);
 
-              // Check if the current time falls within the lesson time range
+              DebugPrintln("Lesson " + String(i) + ": Start=" + String(startSeconds) + ", End=" + String(endSeconds));
+
               if (currentTime == startSeconds || currentTime == endSeconds)
               {
-                ringBell(4); // Bell rings for 4 seconds (change as needed)
-                return;      // Stop checking other profiles
+                ringBell();
+                return;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  else if (workMode == 2)
+  {
+    for (JsonObject profile : profiles)
+    {
+      if (profile.containsKey("name") or profile.containsKey("day"))
+      {
+        String profileNameKey = profile["name"].as<String>();
+        String day = profile["day"].as<String>();
+        if (currentDayOfWeek == getDayOfWeekIndex(day) or profile["name"].as<String>() == profileName)
+        {
+          dayProfileFound = true;
+          for (int i = 1; i <= 3; i++)
+          {
+            String lessonKey = "lesson" + String(i);
+            if (profile.containsKey(lessonKey))
+            {
+              JsonObject lesson = profile[lessonKey];
+              String startTime = lesson["start"].as<String>();
+              String endTime = lesson["end"].as<String>();
+
+              int startSeconds = getTimeInSeconds(startTime);
+              int endSeconds = getTimeInSeconds(endTime);
+
+              DebugPrintln("Lesson " + String(i) + ": Start=" + String(startSeconds) + ", End=" + String(endSeconds));
+
+              if (currentTime == startSeconds || currentTime == endSeconds)
+              {
+                ringBell();
+                return;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (!dayProfileFound)
+    {
+      for (JsonObject profile : profiles)
+      {
+        if (profile.containsKey("name") && profile["name"].as<String>() == profileName)
+        {
+          for (int i = 1; i <= 3; i++)
+          {
+            String lessonKey = "lesson" + String(i);
+            if (profile.containsKey(lessonKey))
+            {
+              JsonObject lesson = profile[lessonKey];
+              String startTime = lesson["start"].as<String>();
+              String endTime = lesson["end"].as<String>();
+
+              int startSeconds = getTimeInSeconds(startTime);
+              int endSeconds = getTimeInSeconds(endTime);
+
+              DebugPrintln("Lesson " + String(i) + ": Start=" + String(startSeconds) + ", End=" + String(endSeconds));
+
+              if (currentTime == startSeconds || currentTime == endSeconds)
+              {
+                ringBell();
+                return;
               }
             }
           }

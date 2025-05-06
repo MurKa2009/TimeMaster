@@ -12,20 +12,23 @@ struct DeviceSettings {
   String wifiPassword;    // Пароль WiFi для режима клиента
   bool useAPMode;         // Использовать ли режим точки доступа
   bool debugEnabled;      // Включен ли режим отладки
+  bool proksy_mod;        // Включение работы с прокси
+  int bell_duration;      // Длительность звонка в секундах
+  String proksy_ip;       // IP прокси
+  int proksy_port;     // Порт прокси сервера
   String accountLogin;    // Логин для веб-интерфейса
   String accountPassword; // Пароль для веб-интерфейса
   String localDomain;     // mDNS доменное имя
   String ntpServer;       // NTP сервер для синхронизации времени
-  String led1Color;       // Цвет для LED 1
-  String led2Color;       // Цвет для LED 2
-  String led3Color;       // Цвет для LED 3
-  String led4Color;       // Цвет для LED 4
-  String selectedColor;   // Выбранный цвет (новая переменная)
+  String selectedProfile; // Выбранный профиль
+  int selectedpoint;
+  int workMode;           // Режим работы (число)
+  int currentPage;
 };
 
 // Настройки по умолчанию, если файл настроек не существует
 DeviceSettings deviceSettings = {
-  "SchoolBellAP", "12345678", "", "", true, true, "admin", "admin", "esp", "time.nist.gov", "", "", "", "", ""
+  "SchoolBellAP", "12345678", "HOME-111", "06061986", false, true, false, 2, "", 0, "admin", "admin", "esp", "time.nist.gov", "", 0, 2, 0
 };
 
 // Загрузка настроек из LittleFS
@@ -41,19 +44,22 @@ bool loadSettings() {
   // Загрузка настроек из JSON, использование значений по умолчанию, если значения отсутствуют
   deviceSettings.apSSID          = doc["apSSID"]          | "SchoolBellAP";
   deviceSettings.apPassword      = doc["apPassword"]      | "12345678";
-  deviceSettings.wifiSSID        = doc["wifiSSID"]        | "";
-  deviceSettings.wifiPassword    = doc["wifiPassword"]    | "";
+  deviceSettings.wifiSSID        = doc["wifiSSID"]        | "HOME-111";
+  deviceSettings.wifiPassword    = doc["wifiPassword"]    | "06061986";
   deviceSettings.useAPMode       = doc["useAPMode"]       | true;
   deviceSettings.debugEnabled    = doc["debugEnabled"]    | true;
+  deviceSettings.proksy_mod      = doc["proksy_mod"]      | true;
+  deviceSettings.bell_duration   = doc["bell_duration"]   | 2;
+  deviceSettings.proksy_ip       = doc["proksy_ip"]       | "";
+  deviceSettings.proksy_port     = doc["proksy_port"]     | 0;
   deviceSettings.accountLogin    = doc["accountLogin"]    | "admin";
   deviceSettings.accountPassword = doc["accountPassword"] | "admin";
   deviceSettings.localDomain     = doc["localDomain"]     | "esp";
-  deviceSettings.ntpServer       = doc["ntpServer"]       | "time.nist.gov";
-  deviceSettings.led1Color       = doc["led1Color"]       | "";
-  deviceSettings.led2Color       = doc["led2Color"]       | "";
-  deviceSettings.led3Color       = doc["led3Color"]       | "";
-  deviceSettings.led4Color       = doc["led4Color"]       | "";
-  deviceSettings.selectedColor   = doc["selectedColor"]   | ""; // Загрузка выбранного цвета
+  deviceSettings.ntpServer       = doc["ntpServer"]       | "time.nist.gov"; 
+  deviceSettings.selectedProfile = doc["selectedProfile"] | ""; 
+  deviceSettings.selectedpoint   = doc["selectedpoint"]   | 0;
+  deviceSettings.workMode        = doc["workMode"]        | 2;
+  deviceSettings.currentPage     = doc["currentPage"]     | 0;
   return true;
 }
 
@@ -69,15 +75,18 @@ bool saveSettings() {
   doc["wifiPassword"]    = deviceSettings.wifiPassword;
   doc["useAPMode"]       = deviceSettings.useAPMode;
   doc["debugEnabled"]    = deviceSettings.debugEnabled;
+  doc["proksy_mod"]      = deviceSettings.proksy_mod;
+  doc["bell_duration"]   = deviceSettings.bell_duration;
+  doc["proksy_ip"]       = deviceSettings.proksy_ip;
+  doc["proksy_port"]     = deviceSettings.proksy_port;
   doc["accountLogin"]    = deviceSettings.accountLogin;
   doc["accountPassword"] = deviceSettings.accountPassword;
   doc["localDomain"]     = deviceSettings.localDomain;
   doc["ntpServer"]       = deviceSettings.ntpServer;
-  doc["led1Color"]       = deviceSettings.led1Color;
-  doc["led2Color"]       = deviceSettings.led2Color;
-  doc["led3Color"]       = deviceSettings.led3Color;
-  doc["led4Color"]       = deviceSettings.led4Color;
-  doc["selectedColor"]   = deviceSettings.selectedColor; // Сохранение выбранного цвета
+  doc["selectedProfile"] = deviceSettings.selectedProfile; 
+  doc["selectedpoint"]   = deviceSettings.selectedpoint;
+  doc["workMode"]        = deviceSettings.workMode;
+  doc["currentPage"]     = deviceSettings.currentPage;
   bool ok = (serializeJson(doc, file) > 0); // Запись JSON в файл
   file.close();
   return ok; // Возврат true, если успешно

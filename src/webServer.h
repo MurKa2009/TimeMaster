@@ -4,6 +4,7 @@
 #include <ArduinoJson.h>
 #include "handlers/settings.h"
 #include "handlers/profiles.h"
+#include "debugPrint.h"
 
 extern ESP8266WebServer server; // Declare the web server instance
 
@@ -57,12 +58,12 @@ void handleSettingsAPI() {
     doc["debugEnabled"]    = deviceSettings.debugEnabled;
     doc["accountLogin"]    = deviceSettings.accountLogin;
     doc["accountPassword"] = deviceSettings.accountPassword;
+    doc["proksy_mod"]      = deviceSettings.proksy_mod;
+    doc["bell_duration"]   = deviceSettings.bell_duration;
+    doc["proksy_ip"]       = deviceSettings.proksy_ip;
+    doc["proksy_port"]     = deviceSettings.proksy_port;
     doc["localDomain"]     = deviceSettings.localDomain;
     doc["ntpServer"]       = deviceSettings.ntpServer;
-    doc["led1Color"]       = deviceSettings.led1Color;
-    doc["led2Color"]       = deviceSettings.led2Color;
-    doc["led3Color"]       = deviceSettings.led3Color;
-    doc["led4Color"]       = deviceSettings.led4Color;
 
     String output;
     serializeJson(doc, output);
@@ -77,31 +78,23 @@ void handleSettingsAPI() {
       return;
     }
 
-    Serial.println("Received JSON:");
-    serializeJson(doc, Serial); // Print received JSON to Serial
+    DebugPrint("Received JSON:");
+    serializeJson(doc, Serial); 
 
     if (doc.containsKey("apSSID")) deviceSettings.apSSID = doc["apSSID"].as<String>();
     if (doc.containsKey("apPassword")) deviceSettings.apPassword = doc["apPassword"].as<String>();
     if (doc.containsKey("wifiSSID")) deviceSettings.wifiSSID = doc["wifiSSID"].as<String>();
     if (doc.containsKey("wifiPassword")) deviceSettings.wifiPassword = doc["wifiPassword"].as<String>();
-    if (doc.containsKey("useAPMode")) {
-      deviceSettings.useAPMode = doc["useAPMode"].as<bool>();
-      Serial.print("useAPMode set to: ");
-      Serial.println(deviceSettings.useAPMode);
-    }
-    if (doc.containsKey("debugEnabled")) {
-      deviceSettings.debugEnabled = doc["debugEnabled"].as<bool>();
-      Serial.print("debugEnabled set to: ");
-      Serial.println(deviceSettings.debugEnabled);
-    }
+    if (doc.containsKey("useAPMode")) deviceSettings.useAPMode = doc["useAPMode"].as<bool>();
+    if (doc.containsKey("debugEnabled")) deviceSettings.debugEnabled = doc["debugEnabled"].as<bool>();
+    if (doc.containsKey("proksy_mod")) deviceSettings.debugEnabled = doc["proksy_mod"].as<bool>();
+    if (doc.containsKey("bell_duration")) deviceSettings.bell_duration = doc["bell_duration"].as<int>();
+    if (doc.containsKey("proksy_ip")) deviceSettings.proksy_ip = doc["proksy_ip"].as<String>();
+    if (doc.containsKey("proksy_port")) deviceSettings.proksy_port = doc["proksy_port"].as<int>();
     if (doc.containsKey("accountLogin")) deviceSettings.accountLogin = doc["accountLogin"].as<String>();
     if (doc.containsKey("accountPassword")) deviceSettings.accountPassword = doc["accountPassword"].as<String>();
     if (doc.containsKey("localDomain")) deviceSettings.localDomain = doc["localDomain"].as<String>();
     if (doc.containsKey("ntpServer")) deviceSettings.ntpServer = doc["ntpServer"].as<String>();
-    if (doc.containsKey("led1Color")) deviceSettings.led1Color = doc["led1Color"].as<String>();
-    if (doc.containsKey("led2Color")) deviceSettings.led2Color = doc["led2Color"].as<String>();
-    if (doc.containsKey("led3Color")) deviceSettings.led3Color = doc["led3Color"].as<String>();
-    if (doc.containsKey("led4Color")) deviceSettings.led4Color = doc["led4Color"].as<String>();
 
     if (saveSettings()) { // Save updated settings
       DynamicJsonDocument resp(256);
@@ -277,6 +270,8 @@ void handleSyncManual() {
 
     struct timeval now = { .tv_sec = newTime };
     settimeofday(&now, NULL); // Set the system time
+
+
 
     DynamicJsonDocument resp(256);
     resp["success"] = true;
