@@ -63,9 +63,10 @@ void setup() {
     setupRoutes();
     server.begin();
     DebugPrintln("HTTP server started on port 80");
-    while(unixTimeOffset<=1){
+    while(unixTimeOffset <= 1) {
         unixTimeOffset = getCurrentTime();
     }
+    lastSyncTime = millis(); // Установите начальное время синхронизации
 }
 
 void loop() {
@@ -82,14 +83,15 @@ void loop() {
             }
         }
     }
-    if (currentMillis - lastSyncTime >= 8 * 60 * 60 * 1000UL) {
+    if (currentMillis - lastSyncTime >= 60000) { // 1 час в миллисекундах
         lastSyncTime = currentMillis;
         unixTimeOffset = getCurrentTime();
+        Serial.println("synk");
     }
     if (currentMillis - previousMillis >= interval) {
         previousMillis = currentMillis;
         unsigned long unixTime = currentMillis / 1000;
-        unixTimeOffset +=1;
+        unixTimeOffset += 1;
         currentTimee = unixTimeOffset;
     }
     checkBellSchedule(currentTimee, deviceSettings.selectedProfile, deviceSettings.workMode);

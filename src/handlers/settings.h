@@ -28,7 +28,7 @@ struct DeviceSettings {
 
 // Настройки по умолчанию, если файл настроек не существует
 DeviceSettings deviceSettings = {
-  "SchoolBellAP", "12345678", "HOME-111", "06061986", false, true, false, 2, "", 0, "admin", "admin", "esp", "time.nist.gov", "", 0, 2, 0
+  "SchoolBellAP", "12345678", "HOME-111", "06061986", true, true, false, 2, "", 0, "admin", "admin", "esp", "time.nist.gov", "", 0, 2, 0
 };
 
 // Загрузка настроек из LittleFS
@@ -48,7 +48,7 @@ bool loadSettings() {
   deviceSettings.wifiPassword    = doc["wifiPassword"]    | "06061986";
   deviceSettings.useAPMode       = doc["useAPMode"]       | true;
   deviceSettings.debugEnabled    = doc["debugEnabled"]    | true;
-  deviceSettings.proksy_mod      = doc["proksy_mod"]      | true;
+  deviceSettings.proksy_mod      = doc["proksy_mod"]      | false;
   deviceSettings.bell_duration   = doc["bell_duration"]   | 2;
   deviceSettings.proksy_ip       = doc["proksy_ip"]       | "";
   deviceSettings.proksy_port     = doc["proksy_port"]     | 0;
