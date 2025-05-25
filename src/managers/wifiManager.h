@@ -17,9 +17,9 @@ void setupWiFi() {
         WiFi.softAP(deviceSettings.apSSID.c_str(), deviceSettings.apPassword.c_str()); // Start AP
         DebugPrintln("Running in Access Point mode");
         DebugPrintln("AP IP: " + WiFi.softAPIP().toString());
-            oled.setScale(2);
-            oled.print(WiFi.softAPIP()); 
-            oled.setScale(1);
+        oled.clear();
+        oled.setCursor(0, 3);
+        oled.print(WiFi.softAPIP()); 
     } else {
         WiFi.mode(WIFI_STA); // Set WiFi to Client mode
         WiFi.begin(deviceSettings.wifiSSID.c_str(), deviceSettings.wifiPassword.c_str()); // Connect to WiFi
@@ -33,9 +33,9 @@ void setupWiFi() {
         DebugPrintln("");
         if (WiFi.status() == WL_CONNECTED) {
             DebugPrintln("WiFi connected, IP: " + WiFi.localIP().toString());
-            oled.setScale(2);
+            oled.clear();
+            oled.setCursor(0, 3);
             oled.print(WiFi.localIP()); 
-            oled.setScale(1);
         } else {
             DebugPrintln("WiFi connection failed! Switching to AP mode...");
             WiFi.mode(WIFI_AP); // Fallback to AP mode
@@ -46,9 +46,9 @@ void setupWiFi() {
             WiFi.softAP(deviceSettings.apSSID.c_str(), deviceSettings.apPassword.c_str());
             DebugPrintln("Running in Access Point mode");
             DebugPrintln("AP IP: " + WiFi.softAPIP().toString());
-            oled.setScale(2);
+            oled.clear();
+            oled.setCursor(0, 3);
             oled.print(WiFi.softAPIP()); 
-            oled.setScale(1);
         }
     }
 }

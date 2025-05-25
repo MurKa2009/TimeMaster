@@ -40,6 +40,7 @@ void setup() {
     oled.clear();
     oled.print(F("    TIME \n\r   MASTER"));
     oled.update();
+    oled.setScale(1);
     enc1.setType(TYPE2);
     delay(100);
     printDebugHeader();
