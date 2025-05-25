@@ -37,9 +37,8 @@ Web-интерфейс напрямую интегрируется с микро
 Web-интерфейс также предоставляет возможность мониторинга состояния устройства в реальном времени, что позволяет пользователям оперативно реагировать на изменения и корректировать настройки при необходимости.
 
 ## Установка и Настройка
-1. **Установите visual strudio и platform io**:
-   \n https://platformio.org
-    
+1. [**Установите visual strudio**](https://code.visualstudio.com/) **и** [**platform io**](https://platformio.org)
+
 2. **Клонируйте репозиторий**:
     ```bash
     git clone https://github.com/MurKa2009/TimeMaster/tree/master
