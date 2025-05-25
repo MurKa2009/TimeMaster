@@ -40,7 +40,7 @@ Web-интерфейс также предоставляет возможнос�
 
 1. **Клонируйте репозиторий**:
     ```bash
-    git clone [https://github.com/Thorgathis/TimeMaster](https://github.com/MurKa2009/TimeMaster/tree/master)
+    git clone https://github.com/MurKa2009/TimeMaster/tree/master
     ```
 
 2. **Загрузите файловую систему**:
