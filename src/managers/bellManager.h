@@ -154,16 +154,18 @@ void checkBellSchedule(int currentTime, const String &profileName, int workMode)
   else if (workMode == 2)
   {
     DebugPrintln("Work mode 2");
+    
+    // Сначала проверяем профили с днями (приоритетные)
     for (JsonObject profile : profiles)
     {
-      if (profile.containsKey("name") or profile.containsKey("day"))
+      if (profile.containsKey("day"))
       {
-        String profileNameKey = profile["name"].as<String>();
         String day = profile["day"].as<String>();
-        if (currentDayOfWeek == getDayOfWeekIndex(day) or profile["name"].as<String>() == profileName)
+        
+        if (currentDayOfWeek == getDayOfWeekIndex(day))
         {
           dayProfileFound = true;
-          DebugPrintln("Day or name profile found: " + day + " or " + profileName);
+          DebugPrintln("Day profile found: " + day);
           int lessonIndex = 1;
           while (true)
           {
@@ -181,7 +183,7 @@ void checkBellSchedule(int currentTime, const String &profileName, int workMode)
 
               if (currentTime == startSeconds || currentTime == endSeconds)
               {
-                DebugPrintln("Bell should ring now");
+                DebugPrintln("Bell should ring now (from day profile)");
                 ringBell();
                 Serial.println(currentTime);
                 return;
@@ -197,14 +199,15 @@ void checkBellSchedule(int currentTime, const String &profileName, int workMode)
       }
     }
 
+    // Если профиль с днем не найден, используем профиль с day="none"
     if (!dayProfileFound)
     {
-      DebugPrintln("Day profile not found, using default profile");
+      DebugPrintln("Day profile not found, looking for profile with day='none'");
       for (JsonObject profile : profiles)
       {
-        if (profile.containsKey("name") && profile["name"].as<String>() == profileName)
+        if (profile.containsKey("day") && profile["day"].as<String>() == "none")
         {
-          DebugPrintln("Default profile found: " + profileName);
+          DebugPrintln("Profile with day='none' found");
           int lessonIndex = 1;
           while (true)
           {
@@ -222,7 +225,7 @@ void checkBellSchedule(int currentTime, const String &profileName, int workMode)
 
               if (currentTime == startSeconds || currentTime == endSeconds)
               {
-                DebugPrintln("Bell should ring now");
+                DebugPrintln("Bell should ring now (from profile with day='none')");
                 ringBell();
                 Serial.println(currentTime);
                 return;
