@@ -64,6 +64,10 @@ void handleSettingsAPI() {
     doc["proksy_port"]     = deviceSettings.proksy_port;
     doc["localDomain"]     = deviceSettings.localDomain;
     doc["ntpServer"]       = deviceSettings.ntpServer;
+    doc["selectedProfile"] = deviceSettings.selectedProfile;
+    doc["selectedpoint"]   = deviceSettings.selectedpoint;
+    doc["workMode"]        = deviceSettings.workMode;
+    doc["currentPage"]     = deviceSettings.currentPage;
 
     String output;
     serializeJson(doc, output);
@@ -87,7 +91,7 @@ void handleSettingsAPI() {
     if (doc.containsKey("wifiPassword")) deviceSettings.wifiPassword = doc["wifiPassword"].as<String>();
     if (doc.containsKey("useAPMode")) deviceSettings.useAPMode = doc["useAPMode"].as<bool>();
     if (doc.containsKey("debugEnabled")) deviceSettings.debugEnabled = doc["debugEnabled"].as<bool>();
-    if (doc.containsKey("proksy_mod")) deviceSettings.debugEnabled = doc["proksy_mod"].as<bool>();
+    if (doc.containsKey("proksy_mod")) deviceSettings.proksy_mod = doc["proksy_mod"].as<bool>();
     if (doc.containsKey("bell_duration")) deviceSettings.bell_duration = doc["bell_duration"].as<int>();
     if (doc.containsKey("proksy_ip")) deviceSettings.proksy_ip = doc["proksy_ip"].as<String>();
     if (doc.containsKey("proksy_port")) deviceSettings.proksy_port = doc["proksy_port"].as<int>();
@@ -95,6 +99,9 @@ void handleSettingsAPI() {
     if (doc.containsKey("accountPassword")) deviceSettings.accountPassword = doc["accountPassword"].as<String>();
     if (doc.containsKey("localDomain")) deviceSettings.localDomain = doc["localDomain"].as<String>();
     if (doc.containsKey("ntpServer")) deviceSettings.ntpServer = doc["ntpServer"].as<String>();
+    if (doc.containsKey("selectedProfile")) deviceSettings.selectedProfile = doc["selectedProfile"].as<String>();
+    if (doc.containsKey("workMode")) deviceSettings.workMode = constrain(doc["workMode"].as<int>(), 0, 2);
+    if (deviceSettings.workMode == 2) deviceSettings.selectedProfile = "";
 
     if (saveSettings()) { // Save updated settings
       DynamicJsonDocument resp(256);
@@ -123,6 +130,9 @@ void handleProfilesAPI() {
     }
     String output;
     serializeJson(doc.as<JsonArray>(), output);
+    if (server.uri() == "/api/profiles.json") {
+      server.sendHeader("Content-Disposition", "attachment; filename=profiles.json");
+    }
     server.send(200, "application/json", output); // Send JSON response
   }
   else if (server.method() == HTTP_POST) {
@@ -138,10 +148,6 @@ void handleProfilesAPI() {
       server.send(400, "text/plain", "Profile must contain id and name"); // Return 400 if required fields are missing
       return;
     }
-    if (!profile.containsKey("color")) {
-      profile["color"] = "#FFFFFF"; // Set default color if missing
-    }
-
     if (saveProfile(profile)) { // Save the profile
       DynamicJsonDocument resp(256);
       resp["success"] = true;
@@ -180,7 +186,7 @@ void handleSyncDevice() {
     doc["error"] = "Failed to get local time"; // Return 500 if time cannot be fetched
     String output;
     serializeJson(doc, output);
-    server.send(500, "application/json", output);
+    server.send(503, "application/json", output);
     return;
   }
 
@@ -296,8 +302,10 @@ void setupRoutes() {
 
   server.on("/api/settings", HTTP_GET, handleSettingsAPI); // Settings API (GET)
   server.on("/api/settings", HTTP_POST, handleSettingsAPI); // Settings API (POST)
+  server.on("/api/settings.json", HTTP_GET, handleSettingsAPI); // Settings backup alias
 
   server.on("/api/profiles", HTTP_GET, handleProfilesAPI); // Profiles API (GET)
+  server.on("/api/profiles.json", HTTP_GET, handleProfilesAPI); // Profiles download
   server.on("/api/profiles", HTTP_POST, handleProfilesAPI); // Profiles API (POST)
   server.on("/api/profiles", HTTP_DELETE, handleProfilesAPI); // Profiles API (DELETE)
 

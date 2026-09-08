@@ -1,2 +1,4 @@
-.DS_Store
-/.pio
+.pio/
+.vscode/
+data/settings.json
+data/profiles.json

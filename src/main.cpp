@@ -20,15 +20,16 @@ GyverOLED<SSD1306_128x64, OLED_NO_BUFFER> oled;
 Encoder enc1(CLK, DT, SW);
 ESP8266WebServer server(80);
 WiFiClientSecure client;
-unsigned long unixTimeOffset = 0;
 unsigned long lastSyncTime = 0;
 unsigned long previousMillis = 0;
 const unsigned long interval = 1000;
+const int secondsPerDay = 24 * 60 * 60;
 
 String imy;
 int ITEMS;
 bool flag = true;
 int currentTimee;
+int currentDayOfWeek;
 
 void setup() {
     pinMode(BELL_PIN, OUTPUT);
@@ -64,9 +65,9 @@ void setup() {
     setupRoutes();
     server.begin();
     DebugPrintln("HTTP server started on port 80");
-    while(unixTimeOffset <= 1) {
-        unixTimeOffset = getCurrentTime();
-    }
+    currentTimee = getCurrentTime();
+    currentDayOfWeek = getCurrentDayOfWeek();
+    previousMillis = millis();
     lastSyncTime = millis(); // Установите начальное время синхронизации
 }
 
@@ -86,16 +87,21 @@ void loop() {
     }
     if (currentMillis - lastSyncTime >= 60000) { // 1 час в миллисекундах
         lastSyncTime = currentMillis;
-        unixTimeOffset = getCurrentTime();
+        currentTimee = getCurrentTime();
+        currentDayOfWeek = getCurrentDayOfWeek();
         Serial.println("synk");
     }
     if (currentMillis - previousMillis >= interval) {
-        previousMillis = currentMillis;
-        unsigned long unixTime = currentMillis / 1000;
-        unixTimeOffset += 1;
-        currentTimee = unixTimeOffset;
+        unsigned long elapsedSeconds = (currentMillis - previousMillis) / 1000;
+        previousMillis += elapsedSeconds * 1000;
+        currentTimee += elapsedSeconds;
+        while (currentTimee >= secondsPerDay) {
+            currentTimee -= secondsPerDay;
+            currentDayOfWeek = (currentDayOfWeek + 1) % 7;
+        }
+        checkBellSchedule(currentTimee, currentDayOfWeek,
+                          deviceSettings.selectedProfile, deviceSettings.workMode);
     }
-    checkBellSchedule(currentTimee, deviceSettings.selectedProfile, deviceSettings.workMode);
 
     JsonDocument doc;
     if (!loadProfiles(doc)) {

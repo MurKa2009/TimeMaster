@@ -57,7 +57,9 @@ void fullOled(String names[], int sizee) {
             }
         }
         updateDisplay(names);
-        deviceSettings.selectedProfile = names[deviceSettings.selectedpoint];
+        if (deviceSettings.selectedpoint < ITEMS - 1) {
+            deviceSettings.selectedProfile = names[deviceSettings.selectedpoint];
+        }
         saveSettings();
     }
 
@@ -73,14 +75,18 @@ void fullOled(String names[], int sizee) {
             }
         }
         updateDisplay(names);
-        deviceSettings.selectedProfile = names[deviceSettings.selectedpoint];
+        if (deviceSettings.selectedpoint < ITEMS - 1) {
+            deviceSettings.selectedProfile = names[deviceSettings.selectedpoint];
+        }
         saveSettings();
     }
 
     if (enc1.isClick()) {
         flag = !flag;
         updateDisplay(names);
-        deviceSettings.selectedProfile = names[deviceSettings.selectedpoint];
+        if (deviceSettings.selectedpoint < ITEMS - 1) {
+            deviceSettings.selectedProfile = names[deviceSettings.selectedpoint];
+        }
         saveSettings();
     }
     delayMicroseconds(10);

@@ -4,25 +4,43 @@
 #include "handlers/profiles.h"
 #include "timeManager.h"
 
-unsigned long bellStartTime = 0;
+unsigned long bellStopTime = 0;
 bool bellRinging = false;
+int lastBellDay = -1;
+int lastBellTime = -1;
 
-int getTimeInSeconds(String timeStr)
+int getTimeInSeconds(const String &timeStr)
 {
   int colonIndex = timeStr.indexOf(':');
+  if (colonIndex <= 0)
+    return -1;
+
   int hours = timeStr.substring(0, colonIndex).toInt();
   int minutes = timeStr.substring(colonIndex + 1).toInt();
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59)
+    return -1;
+
   return hours * 3600 + minutes * 60;
+}
+
+void stopBellIfNeeded()
+{
+  if (bellRinging && static_cast<long>(millis() - bellStopTime) >= 0)
+  {
+    digitalWrite(BELL_PIN, HIGH);
+    bellStopTime = 0;
+    bellRinging = false;
+    DebugPrintln("Bell stopped.");
+  }
 }
 
 void ringBell()
 {
+  int duration = max(0, deviceSettings.bell_duration);
   digitalWrite(BELL_PIN, LOW);
-  DebugPrintln(String(getCurrentTime()));
+  bellRinging = true;
+  bellStopTime = millis() + static_cast<unsigned long>(duration) * 1000UL;
   DebugPrintln("Bell ringing...");
-  delay(deviceSettings.bell_duration * 1000);
-  digitalWrite(BELL_PIN, HIGH);
-  DebugPrintln("Bell stopped.");
 }
 
 int getDayOfWeekIndex(const String &day)
@@ -46,8 +64,57 @@ int getDayOfWeekIndex(const String &day)
   return -1;
 }
 
-void checkBellSchedule(int currentTime, const String &profileName, int workMode)
+bool lessonMatchesTime(JsonObject lesson, int currentTime)
 {
+  if (!lesson["start"].is<String>() || !lesson["end"].is<String>())
+    return false;
+
+  int startSeconds = getTimeInSeconds(lesson["start"].as<String>());
+  int endSeconds = getTimeInSeconds(lesson["end"].as<String>());
+  return currentTime == startSeconds || currentTime == endSeconds;
+}
+
+bool profileHasBellEvent(JsonObject profile, int currentTime)
+{
+  for (int lessonIndex = 1;; lessonIndex++)
+  {
+    String lessonKey = "lesson" + String(lessonIndex);
+    if (!profile[lessonKey].is<JsonObject>())
+      return false;
+
+    if (lessonMatchesTime(profile[lessonKey].as<JsonObject>(), currentTime))
+      return true;
+  }
+}
+
+bool profileMatchesSchedule(JsonObject profile, const String &profileName,
+                            int currentDayOfWeek, int workMode,
+                            bool dayProfileFound)
+{
+  if (workMode == 0)
+    return profile["name"].is<String>() && profile["name"].as<String>() == profileName;
+
+  if (workMode == 1)
+    return profile["day"].is<String>() &&
+           currentDayOfWeek == getDayOfWeekIndex(profile["day"].as<String>());
+
+  if (workMode == 2 && profile["day"].is<String>())
+  {
+    String day = profile["day"].as<String>();
+    return currentDayOfWeek == getDayOfWeekIndex(day) ||
+           (day == "none" && !dayProfileFound);
+  }
+
+  return false;
+}
+
+void checkBellSchedule(int currentTime, int currentDayOfWeek,
+                       const String &profileName, int workMode)
+{
+  stopBellIfNeeded();
+  if (currentTime < 0 || bellRinging)
+    return;
+
   JsonDocument doc;
   if (!loadProfiles(doc))
   {
@@ -55,190 +122,30 @@ void checkBellSchedule(int currentTime, const String &profileName, int workMode)
     return;
   }
 
-  int currentDayOfWeek = getCurrentDayOfWeek();
-  bool dayProfileFound = false;
-
   JsonArray profiles = doc.as<JsonArray>();
-
-  DebugPrintln("Current time: " + String(currentTime));
-  DebugPrintln("Current day of week: " + String(currentDayOfWeek));
-  DebugPrintln("Work mode: " + String(workMode));
-
-  if (workMode == 0)
+  bool dayProfileFound = false;
+  if (workMode == 2)
   {
-    DebugPrintln("Work mode 0");
     for (JsonObject profile : profiles)
     {
-      if (profile.containsKey("name") && profile["name"].as<String>() == profileName)
-      {
-        DebugPrintln("Profile found: " + profileName);
-        int lessonIndex = 1;
-        while (true)
-        {
-          String lessonKey = "lesson" + String(lessonIndex);
-          if (profile.containsKey(lessonKey))
-          {
-            JsonObject lesson = profile[lessonKey];
-            String startTime = lesson["start"].as<String>();
-            String endTime = lesson["end"].as<String>();
-
-            int startSeconds = getTimeInSeconds(startTime);
-            int endSeconds = getTimeInSeconds(endTime);
-
-            DebugPrintln("Lesson " + String(lessonIndex) + ": Start=" + String(startSeconds) + ", End=" + String(endSeconds));
-
-            if (currentTime == startSeconds || currentTime == endSeconds)
-            {
-              DebugPrintln("Bell should ring now");
-              ringBell();
-              Serial.println(currentTime);
-              return;
-            }
-            lessonIndex++;
-          }
-          else
-          {
-            break;
-          }
-        }
-      }
+      if (profile["day"].is<String>() &&
+          currentDayOfWeek == getDayOfWeekIndex(profile["day"].as<String>()))
+        dayProfileFound = true;
     }
   }
-  else if (workMode == 1)
+
+  for (JsonObject profile : profiles)
   {
-    DebugPrintln("Work mode 1");
-    for (JsonObject profile : profiles)
+    if (profileMatchesSchedule(profile, profileName, currentDayOfWeek,
+                               workMode, dayProfileFound) &&
+        profileHasBellEvent(profile, currentTime))
     {
-      if (profile.containsKey("name") && profile.containsKey("day"))
-      {
-        String profileNameKey = profile["name"].as<String>();
-        String day = profile["day"].as<String>();
-
-        if (currentDayOfWeek == getDayOfWeekIndex(day))
-        {
-          dayProfileFound = true;
-          DebugPrintln("Day profile found: " + day);
-          int lessonIndex = 1;
-          while (true)
-          {
-            String lessonKey = "lesson" + String(lessonIndex);
-            if (profile.containsKey(lessonKey))
-            {
-              JsonObject lesson = profile[lessonKey];
-              String startTime = lesson["start"].as<String>();
-              String endTime = lesson["end"].as<String>();
-
-              int startSeconds = getTimeInSeconds(startTime);
-              int endSeconds = getTimeInSeconds(endTime);
-
-              DebugPrintln("Lesson " + String(lessonIndex) + ": Start=" + String(startSeconds) + ", End=" + String(endSeconds));
-
-              if (currentTime == startSeconds || currentTime == endSeconds)
-              {
-                DebugPrintln("Bell should ring now");
-                ringBell();
-                Serial.println(currentTime);
-                return;
-              }
-              lessonIndex++;
-            }
-            else
-            {
-              break;
-            }
-          }
-        }
-      }
-    }
-  }
-  else if (workMode == 2)
-  {
-    DebugPrintln("Work mode 2");
-    
-    // Сначала проверяем профили с днями (приоритетные)
-    for (JsonObject profile : profiles)
-    {
-      if (profile.containsKey("day"))
-      {
-        String day = profile["day"].as<String>();
-        
-        if (currentDayOfWeek == getDayOfWeekIndex(day))
-        {
-          dayProfileFound = true;
-          DebugPrintln("Day profile found: " + day);
-          int lessonIndex = 1;
-          while (true)
-          {
-            String lessonKey = "lesson" + String(lessonIndex);
-            if (profile.containsKey(lessonKey))
-            {
-              JsonObject lesson = profile[lessonKey];
-              String startTime = lesson["start"].as<String>();
-              String endTime = lesson["end"].as<String>();
-
-              int startSeconds = getTimeInSeconds(startTime);
-              int endSeconds = getTimeInSeconds(endTime);
-
-              DebugPrintln("Lesson " + String(lessonIndex) + ": Start=" + String(startSeconds) + ", End=" + String(endSeconds));
-
-              if (currentTime == startSeconds || currentTime == endSeconds)
-              {
-                DebugPrintln("Bell should ring now (from day profile)");
-                ringBell();
-                Serial.println(currentTime);
-                return;
-              }
-              lessonIndex++;
-            }
-            else
-            {
-              break;
-            }
-          }
-        }
-      }
-    }
-
-    // Если профиль с днем не найден, используем профиль с day="none"
-    if (!dayProfileFound)
-    {
-      DebugPrintln("Day profile not found, looking for profile with day='none'");
-      for (JsonObject profile : profiles)
-      {
-        if (profile.containsKey("day") && profile["day"].as<String>() == "none")
-        {
-          DebugPrintln("Profile with day='none' found");
-          int lessonIndex = 1;
-          while (true)
-          {
-            String lessonKey = "lesson" + String(lessonIndex);
-            if (profile.containsKey(lessonKey))
-            {
-              JsonObject lesson = profile[lessonKey];
-              String startTime = lesson["start"].as<String>();
-              String endTime = lesson["end"].as<String>();
-
-              int startSeconds = getTimeInSeconds(startTime);
-              int endSeconds = getTimeInSeconds(endTime);
-
-              DebugPrintln("Lesson " + String(lessonIndex) + ": Start=" + String(startSeconds) + ", End=" + String(endSeconds));
-
-              if (currentTime == startSeconds || currentTime == endSeconds)
-              {
-                DebugPrintln("Bell should ring now (from profile with day='none')");
-                ringBell();
-                Serial.println(currentTime);
-                return;
-              }
-              lessonIndex++;
-            }
-            else
-            {
-              break;
-            }
-          }
-        }
-      }
+      if (lastBellDay == currentDayOfWeek && lastBellTime == currentTime)
+        return;
+      lastBellDay = currentDayOfWeek;
+      lastBellTime = currentTime;
+      ringBell();
+      return;
     }
   }
 }
