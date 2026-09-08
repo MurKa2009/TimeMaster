@@ -27,11 +27,12 @@
         .form-btn { border: 0; border-radius: 0; }
         .profile-header { display: flex; align-items: center; }
         .profile-header .col-name { flex: 0 0 83%; }
-        .profile-header .col-color { flex: 0 0 17%; }
         .settings-group { border: 1px solid #ccc; border-radius: 5px; padding: 10px 15px 0 15px; margin-bottom: 10px; }
         .settings-group h5 { margin-bottom: 10px; }
         #settings-form > button { margin-top: 10px; }
         #toast-container { position: fixed; top: 20px; right: 20px; z-index: 1055; }
+        .device-state { background: #f8f9fa; border-left: 4px solid var(--bs-success); padding: 12px 15px; margin-bottom: 15px; }
+        .device-state strong { display: inline-block; min-width: 135px; }
     </style>
 </head>
 <body>
@@ -49,6 +50,28 @@
         <div class="tab-pane fade show active" id="settings">
             <h2>Настройки</h2>
             <form id="settings-form">
+                <div class="device-state" aria-live="polite">
+                    <div><strong>Активные профили:</strong> <span id="active-profile-label">не выбран</span></div>
+                    <div><strong>Режим работы:</strong> <span id="active-mode-label">не определён</span></div>
+                </div>
+                <div class="settings-group">
+                    <h5>Управление расписанием</h5>
+                    <div class="mb-3">
+                        <label for="selected-profile" class="form-label">Активный профиль</label>
+                        <select class="form-select" id="selected-profile" name="selectedProfile">
+                            <option value="">Профиль не выбран</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="work-mode" class="form-label">Режим работы</label>
+                        <select class="form-select" id="work-mode" name="workMode" required>
+                            <option value="0">По выбранному профилю</option>
+                            <option value="1">По дням недели</option>
+                            <option value="2">Все профили</option>
+                        </select>
+                    </div>
+                    <small class="text-muted">Эти параметры соответствуют пунктам ручного управления на OLED.</small>
+                </div>
                 <!-- Учётная запись -->
                 <div class="settings-group">
                     <h5>Учётная запись</h5>
@@ -194,14 +217,6 @@
             return document.querySelectorAll("#dashboardTabs .nav-link.profile-pill").length < 7;
         }
 
-        const colorMap = {
-            red: { full: "rgb(220,53,69)" },
-            yellow: { full: "rgb(255,193,7)" },
-            green: { full: "rgb(25,135,84)" },
-            blue: { full: "rgb(13,110,253)" },
-            gray: { full: "rgb(108,117,125)" },
-        };
-
         const dayMap = {
             monday: "Понедельник",
             tuesday: "Вторник",
@@ -213,10 +228,11 @@
         };
 
         function updatePillColors() {
+            const workMode = Number(document.getElementById("work-mode")?.value);
+            const useAllProfilesColor = workMode === 2;
             document.querySelectorAll("#dashboardTabs .nav-link").forEach((pill) => {
                 if (pill.id === "pill-settings" || pill.id === "add-profile-tab") return;
-                const profileColor = pill.getAttribute("data-color") || "";
-                const appliedColor = profileColor && colorMap[profileColor] ? colorMap[profileColor].full : colorMap.gray.full;
+                const appliedColor = useAllProfilesColor ? "rgb(25,135,84)" : "rgb(108,117,125)";
                 if (pill.classList.contains("active")) {
                     pill.style.backgroundColor = appliedColor;
                     pill.style.color = "#fff";
@@ -258,6 +274,8 @@
                 const result = await response.json();
                 if (result.time) {
                     document.getElementById("manual-time").value = result.time;
+                } else if (result.error) {
+                    console.warn(result.error);
                 }
             } catch (err) {
                 console.error("Ошибка получения времени с ESP:", err);
@@ -283,6 +301,8 @@
                     document.getElementById("proksy_mod").checked = settings.proksy_mod;
                     document.getElementById("proksy_ip").value = settings.proksy_ip || "";
                     document.getElementById("proksy_port").value = settings.proksy_port || "";
+                    document.getElementById("work-mode").value = String(settings.workMode ?? 2);
+                    updateDeviceState(settings.selectedProfile || "", settings.workMode, []);
                     document.getElementById("mode").dispatchEvent(new Event("change"));
                 }
             } catch (err) {
@@ -295,11 +315,11 @@
                     const profiles = await profilesResponse.json();
                     profiles.forEach((profile) => {
                         if (profile && profile.id) {
-                            const color = profile.color || "";
                             const day = profile.day || "";
-                            createProfileTab(profile.id, profile.name, color, day, profile);
+                            createProfileTab(profile.id, profile.name, day, profile);
                         }
                     });
+                    populateProfileSelector(profiles);
                 }
             } catch (err) {
                 console.error("Ошибка загрузки профилей:", err);
@@ -324,11 +344,11 @@
             }
         });
 
-        function createProfileTab(profileId, profileName, profileColor = "", profileDay = "", profileData = {}) {
+        function createProfileTab(profileId, profileName, profileDay = "", profileData = {}) {
             if (document.getElementById(profileId)) return;
             const newProfileTab = `
                 <li class="nav-item">
-                    <a class="nav-link profile-pill" data-bs-toggle="pill" href="#${profileId}" data-color="${profileColor}" data-status="${profileData.status || "inactive"}">
+                    <a class="nav-link profile-pill" data-bs-toggle="pill" href="#${profileId}">
                         ${profileName}
                     </a>
                 </li>
@@ -379,22 +399,9 @@
 
             const profileHeader = `
                 <div class="row mb-3 profile-header align-items-center" style="--bs-gutter-x: 0.5rem; --bs-gutter-y: 0.5rem">
-                    <small class="text-muted" id="${profileId}-status-label">
-                        ${profileData.status === "active" ? "Активен" : "Не активен"}
-                    </small>
                     <div class="col-md-10 col-sm-8">
                         <label for="${profileId}-name" class="form-label">Название профиля</label>
                         <input type="text" class="form-control" id="${profileId}-name" name="name" value="${profileName}" />
-                    </div>
-                    <div class="col-md-2 col-sm-4">
-                        <label for="${profileId}-color" class="form-label">Цвет</label>
-                        <select id="${profileId}-color" name="color" class="form-select">
-                            <option value="" ${!profileColor ? "selected" : ""}>--</option>
-                            <option value="red" ${profileColor === "red" ? "selected" : ""}>Красный</option>
-                            <option value="yellow" ${profileColor === "yellow" ? "selected" : ""}>Жёлтый</option>
-                            <option value="green" ${profileColor === "green" ? "selected" : ""}>Зелёный</option>
-                            <option value="blue" ${profileColor === "blue" ? "selected" : ""}>Синий</option>
-                        </select>
                     </div>
                     <div class="col-md-2 col-sm-4">
                         <label for="${profileId}-day" class="form-label">День недели</label>
@@ -449,22 +456,6 @@
                 });
             }
 
-            document.getElementById(`${profileId}-color`).addEventListener("change", function () {
-                const selectedColor = this.value;
-                if (selectedColor && colorMap[selectedColor]) {
-                    this.style.backgroundColor = colorMap[selectedColor].full;
-                    this.style.color = "#fff";
-                } else {
-                    this.style.backgroundColor = "transparent";
-                    this.style.color = "#495057";
-                }
-                const pill = document.querySelector(`#dashboardTabs .profile-pill[href="#${profileId}"]`);
-                if (pill) {
-                    pill.setAttribute("data-color", selectedColor);
-                    updatePillColors();
-                }
-            });
-
             document.getElementById(`${profileId}-day`).addEventListener("change", function () {
                 const selectedDay = this.value;
                 const pill = document.querySelector(`#dashboardTabs .profile-pill[href="#${profileId}"]`);
@@ -473,6 +464,75 @@
                 }
             });
         }
+
+        const workModeLabels = ["По выбранному профилю", "По дням недели", "Все профили"];
+
+        let loadedProfiles = [];
+
+        function populateProfileSelector(profiles) {
+            loadedProfiles = profiles;
+            refreshProfileSelector();
+        }
+
+        function refreshProfileSelector() {
+            const selector = document.getElementById("selected-profile");
+            const workMode = Number(document.getElementById("work-mode").value);
+            const currentProfile = selector.value || document.getElementById("active-profile-label").dataset.profile || "";
+            const availableProfiles = workMode === 1
+                ? loadedProfiles.filter((profile) => profile && profile.name && profile.day && profile.day !== "none")
+                : loadedProfiles.filter((profile) => profile && profile.name);
+
+            selector.innerHTML = '<option value="">Профиль не выбран</option>';
+            availableProfiles.forEach((profile) => {
+                const option = document.createElement("option");
+                option.value = profile.name;
+                option.textContent = profile.name;
+                selector.appendChild(option);
+            });
+
+            selector.disabled = workMode === 2;
+            if (workMode === 2) {
+                selector.value = "";
+            } else if (availableProfiles.some((profile) => profile.name === currentProfile)) {
+                selector.value = currentProfile;
+            }
+            updateDeviceState(selector.value, workMode, loadedProfiles);
+        }
+
+        function updateDeviceState(profileName, workMode, profiles = loadedProfiles) {
+            const profileLabel = document.getElementById("active-profile-label");
+            const modeLabel = document.getElementById("active-mode-label");
+            const numericMode = Number(workMode);
+            const profileNames = profiles
+                .filter((profile) => profile && profile.name)
+                .map((profile) => profile.name);
+
+            if (numericMode === 2) {
+                profileLabel.textContent = profileNames.length
+                    ? `Работают все профили: ${profileNames.join(", ")}`
+                    : "Работают все профили";
+            } else if (numericMode === 1) {
+                const dayProfiles = profiles
+                    .filter((profile) => profile && profile.name && profile.day)
+                    .map((profile) => profile.name);
+                profileLabel.textContent = dayProfiles.length
+                    ? `По дням недели: ${dayProfiles.join(", ")}`
+                    : "По дням недели";
+            } else {
+                profileLabel.textContent = profileName || "не выбран";
+            }
+            profileLabel.dataset.profile = profileName || "";
+            modeLabel.textContent = workModeLabels[numericMode] || "не определён";
+            updatePillColors();
+        }
+
+        document.getElementById("selected-profile").addEventListener("change", function () {
+            updateDeviceState(this.value, document.getElementById("work-mode").value, loadedProfiles);
+        });
+
+        document.getElementById("work-mode").addEventListener("change", function () {
+            refreshProfileSelector();
+        });
 
         function addRow(tableId, addButtonId) {
             document.getElementById(addButtonId).addEventListener("click", function () {
@@ -516,7 +576,7 @@
                 return;
             }
             const profileId = "profile" + Date.now();
-            createProfileTab(profileId, newProfileName, "", "", {});
+            createProfileTab(profileId, newProfileName, "", {});
             document.getElementById("new-profile-name").value = "";
             const triggerEl = document.querySelector(`a[href="#${profileId}"]`);
             const tab = new bootstrap.Tab(triggerEl);
@@ -528,7 +588,6 @@
             const formData = new FormData(form);
             const profileData = { id: profileId };
             profileData.name = formData.get("name");
-            profileData.color = formData.get("color");
             profileData.day = formData.get("day");
             const lessons = {};
             for (let [key, value] of formData.entries()) {
@@ -575,6 +634,8 @@
                 proksy_mod: document.getElementById("proksy_mod").checked,
                 proksy_ip: formData.get("proksy_ip"),
                 proksy_port: formData.get("proksy_port"),
+                selectedProfile: formData.get("selectedProfile"),
+                workMode: Number(formData.get("workMode")),
             };
 
             try {
